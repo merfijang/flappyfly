@@ -1,0 +1,10 @@
+export class BrainRenderer {
+  private gl:WebGLRenderingContext; private program:WebGLProgram; private activityBuffer:WebGLBuffer; private count=0;
+  constructor(canvas:HTMLCanvasElement){canvas.width=600;canvas.height=520;const gl=canvas.getContext('webgl',{alpha:true,antialias:false});if(!gl)throw new Error('WebGL is required for the neuron map');this.gl=gl;
+    this.program=this.make(`attribute vec2 p;attribute float a;varying float v;void main(){v=a;gl_Position=vec4(p,0.,1.);gl_PointSize=1.2+a*3.;}`,`precision mediump float;varying float v;void main(){float d=distance(gl_PointCoord,vec2(.5));if(d>.5)discard;gl_FragColor=vec4(.25+v*.6,.65+v*.35,.54+v*.35,.17+v*.83);}`);
+    const pos=gl.createBuffer()!;gl.bindBuffer(gl.ARRAY_BUFFER,pos);const n=166700,arr=new Float32Array(n*2);for(let i=0;i<n;i++){const t=i*2.3999632297,r=Math.sqrt((i+.5)/n)*.92;arr[i*2]=Math.cos(t)*r*.82;arr[i*2+1]=Math.sin(t)*r;}gl.bufferData(gl.ARRAY_BUFFER,arr,gl.STATIC_DRAW);const loc=gl.getAttribLocation(this.program,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    this.activityBuffer=gl.createBuffer()!;this.count=n;
+  }
+  render(source:Uint8Array){const gl=this.gl;gl.viewport(0,0,gl.canvas.width,gl.canvas.height);gl.clearColor(.025,.045,.043,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(this.program);const a=new Float32Array(this.count);if(source.length===this.count)for(let i=0;i<a.length;i++)a[i]=source[i]/255;else for(let i=0;i<a.length;i++)a[i]=source[Math.floor(i*source.length/a.length)]/255;gl.bindBuffer(gl.ARRAY_BUFFER,this.activityBuffer);gl.bufferData(gl.ARRAY_BUFFER,a,gl.DYNAMIC_DRAW);const loc=gl.getAttribLocation(this.program,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,1,gl.FLOAT,false,0,0);gl.drawArrays(gl.POINTS,0,this.count)}
+  private make(vs:string,fs:string){const gl=this.gl,p=gl.createProgram()!;for(const [type,src] of [[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]] as const){const s=gl.createShader(type)!;gl.shaderSource(s,src);gl.compileShader(s);gl.attachShader(p,s)}gl.linkProgram(p);return p}
+}

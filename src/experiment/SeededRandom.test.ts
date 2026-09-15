@@ -1,0 +1,1 @@
+import { describe,expect,it } from 'vitest';import { SeededRandom } from './SeededRandom';describe('SeededRandom',()=>{it('is reproducible',()=>{const a=new SeededRandom(42),b=new SeededRandom(42);expect([a.next(),a.next(),a.next()]).toEqual([b.next(),b.next(),b.next()])})});
