@@ -9,7 +9,7 @@
 - 加载 166,700 个神经元、25,088,107 条有效连接的 MaleCNS v1.0 Connectome。
 - 使用稀疏 CSC 权重结构在 Web Worker 中以 50 Hz 更新神经网络。
 - LC4、LPLC2、LC10a 和垂直速度通道负责游戏状态编码。
-- 提供 `PURE BRAIN` 原始神经解码和 `TRAINED READOUT` 训练读出两种模式。
+- 提供 `PURE BRAIN` 原始神经解码和 `ONLINE TRAIN` 边飞边学习两种模式。
 - `FAST TRAIN` 可在 Worker 中快速生成样本并训练 Logistic Readout。
 - 支持导出、导入训练模型，并自动保存到浏览器本地存储。
 - 训练控制带飞行安全约束，防止多轮训练后连续向上拍翅。
@@ -35,9 +35,9 @@ npm run dev
 ## 使用方法
 
 1. 等待完整 Connectome 加载完成，点击 `WAKE UP FLY`。
-2. 使用 `PURE BRAIN` 查看原始 DNp01 神经解码效果。
-3. 点击 `FAST TRAIN` 生成加速训练样本并训练读出模型。
-4. 切换到 `TRAINED READOUT` 观察训练后的自动飞行。
+2. 默认的 `ONLINE TRAIN` 会从低能力起步，在每次普通飞行中持续更新读出模型，约 1,000 个样本后收敛到快速训练的控制阈值，重开后保留学习进度。
+3. 使用 `PURE BRAIN` 可单独查看不学习的 DNp01 原始神经解码效果。
+4. 点击 `FAST TRAIN` 可额外生成加速训练样本，但不再是获得进步的必要步骤。
 5. 可开启 `AUTO REVIVE`，让果蝇死亡后自动开始下一轮。
 6. 使用 `EXPORT MODEL` 下载模型 JSON；使用 `IMPORT MODEL` 恢复模型。
 

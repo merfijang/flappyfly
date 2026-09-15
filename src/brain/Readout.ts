@@ -1,4 +1,4 @@
-export interface ReadoutModel { weights: number[]; bias: number; threshold: number; features: string[]; mean?: number[]; scale?: number[]; }
+export interface ReadoutModel { weights: number[]; bias: number; threshold: number; features: string[]; mean?: number[]; scale?: number[]; trainingSamples?: number; trainingLoss?: number; }
 export const DEFAULT_READOUT: ReadoutModel = {
   features: ['TARGET_DN L','TARGET_DN R','LOOM_DN L','LOOM_DN R','ESCAPE_DN L','ESCAPE_DN R','DNae002 L','DNae002 R','DNg111 L','DNg111 R','DNp01 L','DNp01 R'],
   weights: Array(12).fill(0), bias: -0.35, threshold: 0.42

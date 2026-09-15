@@ -1,10 +1,15 @@
 import type { FlappyState } from '../types';
 
-/** The learned readout may tune timing, but may never override flight safety. */
-export function trainedFlapRequest(state: FlappyState, learned: number) {
+/** Learning controls when to flap; geometry only prevents obviously unsafe upward spam. */
+export function trainedFlapRequest(state: FlappyState, learned: number, threshold: number) {
   const adaptiveMargin = (Math.max(0, Math.min(1, learned)) - 0.5) * 12;
   const belowTarget = state.birdY > state.gapCenterY + 8 - adaptiveMargin;
   const notClimbingFast = state.birdVelocityY > -70;
-  return belowTarget && notClimbingFast;
+  return learned >= threshold && belowTarget && notClimbingFast;
 }
 
+/** Ordinary training starts cautious and reaches the fitted-model threshold after ~1,000 samples. */
+export function onlineLearningThreshold(samples: number, trainedThreshold: number) {
+  const progress = Math.max(0, Math.min(1, samples / 1000));
+  return 0.68 + (trainedThreshold - 0.68) * progress;
+}

@@ -15,7 +15,7 @@ export interface BrainActivity {
 export interface BrainResult {
   timestamp: number; decision: Decision; flapProbability?: number; activity: BrainActivity;
   totalSpikes: number; stepTime: number; activityFrame: ArrayBuffer; activityFrameLength: number;
-  trainingSamples?: number; trainingLoss?: number; readoutModel?: { weights: number[]; bias: number; threshold: number; features: string[]; mean?: number[]; scale?: number[] };
+  trainingSamples?: number; trainingLoss?: number; readoutModel?: { weights: number[]; bias: number; threshold: number; features: string[]; mean?: number[]; scale?: number[]; trainingSamples?: number; trainingLoss?: number };
 }
 export interface BrainManifest {
   neurons: number; connections: number; ln_min: number; weights_mb: number;
