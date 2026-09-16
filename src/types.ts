@@ -1,4 +1,4 @@
-export type Mode = 'pure' | 'trained';
+export type Mode = 'pure' | 'online' | 'trained';
 export type Decision = 'FLAP' | 'WAIT';
 export type AppState = 'BOOT' | 'LOADING_CONNECTOME' | 'READY' | 'RUNNING' | 'DEAD' | 'ERROR';
 

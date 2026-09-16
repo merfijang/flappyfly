@@ -38,6 +38,7 @@ npm run dev
 2. 默认的 `ONLINE TRAIN` 会从低能力起步，在每次普通飞行中持续更新读出模型，约 1,000 个样本后收敛到快速训练的控制阈值，重开后保留学习进度。
 3. 使用 `PURE BRAIN` 可单独查看不学习的 DNp01 原始神经解码效果。
 4. 点击 `FAST TRAIN` 可额外生成加速训练样本，但不再是获得进步的必要步骤。
+   Fast Train 完成后会切换到独立的 `FAST MODEL` 推理模式，模型权重保持冻结并直接启用成熟飞行控制；再点击 `ONLINE TRAIN` 会恢复 Fast Train 之前的在线权重、样本数和 loss，两套模型不会相互覆盖。
 5. 可开启 `AUTO REVIVE`，让果蝇死亡后自动开始下一轮。
 6. 使用 `EXPORT MODEL` 下载模型 JSON；使用 `IMPORT MODEL` 恢复模型。
 

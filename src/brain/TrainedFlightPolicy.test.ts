@@ -17,6 +17,9 @@ describe('trainedFlapRequest', () => {
     expect(trainedFlapRequest(state(340, 20), .4, .42)).toBe(false);
     expect(trainedFlapRequest(state(340, 20), .8, .42)).toBe(true);
   });
+  it('uses mature flight control without a confidence gate after fast training', () => {
+    expect(trainedFlapRequest(state(340, 20), 0, 0)).toBe(true);
+  });
   it('gradually converges from the ordinary-training threshold to the fast-trained threshold', () => {
     expect(onlineLearningThreshold(0, .42)).toBe(.68);
     expect(onlineLearningThreshold(500, .42)).toBeCloseTo(.55);
