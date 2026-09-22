@@ -39,7 +39,6 @@ export function neuronPoint(region: number, role: number, r: () => number): Vec 
     const side = REGIONS[region] === 'opticR' ? -1 : 1, t = 0.3 + r() * 0.45, o = OPTIC(side);
     return [o[0] + (BRAIN[0] - o[0]) * t + gauss(r) * 0.01, o[1] + (BRAIN[1] - o[1]) * t + gauss(r) * 0.018, o[2] + (BRAIN[2] - o[2]) * t + gauss(r) * 0.008];
   }
-  if (role === ROLE.readout) { const t = r(); return [0.345 - t * 0.09, 0.005 - t * 0.02 + gauss(r) * 0.01, gauss(r) * 0.014]; }
   switch (REGIONS[region]) {
     case 'opticL': return inEllipsoid(r, OPTIC(1), [0.055, 0.1, 0.042], 0.35);
     case 'opticR': return inEllipsoid(r, OPTIC(-1), [0.055, 0.1, 0.042], 0.35);

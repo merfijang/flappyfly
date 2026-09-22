@@ -9,7 +9,7 @@ export function tinyBrain(seed = 1) {
   for (const s of [1, 2]) TYPES.forEach((_, t) => { typeIdx.push(t); side.push(s); });
   const n = typeIdx.length;
   const meta: NeuronMeta = {
-    n, types: TYPES, superclasses: ['test'], params: { dt: 0.02, tau: 0.1, gain: 3, tonic: 0, noise_hz: 0, noise_amp: 0 },
+    n, types: TYPES, superclasses: ['descending_neuron'], params: { dt: 0.02, tau: 0.1, gain: 3, tonic: 0, noise_hz: 0, noise_amp: 0 },
     typeIdx: Uint16Array.from(typeIdx), classIdx: new Uint8Array(n), side: Uint8Array.from(side)
   };
   const weights: SparseWeights = { n, nnz: 0, colPtr: new Uint32Array(n + 1), rowIdx: new Uint32Array(0), code: new Uint8Array(0), lut: new Float32Array(256) };

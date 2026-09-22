@@ -14,7 +14,7 @@ export interface AttemptStart { type: 'attempt_start'; n: number; generation: nu
 export interface Frame { type: 'frame'; t: number; y: number; vy: number; pipes: [number, number, number][]; score: number; p: number; flap: boolean }
 
 export type ServerMessage =
-  | { type: 'hello'; stats: Stats; history: AttemptRecord[]; current: AttemptStart | null; theta: number[]; displayCount: number }
+  | { type: 'hello'; stats: Stats; history: AttemptRecord[]; current: AttemptStart | null; theta: number[]; displayCount: number; readoutGroups: string[] }
   | Frame
   | AttemptStart
   | { type: 'attempt_end'; record: AttemptRecord; theta: number[] }

@@ -1,4 +1,4 @@
-import { parseMeta } from '../core/connectome';
+import { parseMeta, type NeuronMeta } from '../core/connectome';
 import { pickDisplayNeurons } from '../shared/display';
 import { decodeBits, type AttemptRecord, type ServerMessage, type Stats } from '../shared/protocol';
 import { Arena } from './arena';
@@ -13,13 +13,13 @@ const sol = (lamports: number, digits = 4) => (lamports / 1e9).toFixed(digits).r
 const sentence = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 const pipes = (n: number) => `${n} pipe${n === 1 ? '' : 's'}`;
 
-async function loadDisplayRegions() {
+async function loadMeta() {
   const res = await fetch(brainMetaUrl());
   if (!res.ok || !res.body) throw new Error(`meta.bin: HTTP ${res.status}`);
   let buf = await res.arrayBuffer();
   const b = new Uint8Array(buf, 0, 2);
   if (b[0] === 0x1f && b[1] === 0x8b) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-  return pickDisplayNeurons(parseMeta(buf));
+  return parseMeta(buf);
 }
 
 export class SiteApp {
@@ -28,6 +28,8 @@ export class SiteApp {
   private arena!: Arena;
   private chart!: LearningChart;
   private bits = new Uint8Array(0);
+  private meta: NeuronMeta | null = null;
+  private readoutGroups: string[] = [];
   private stats: Stats | null = null;
   private lastEnd: AttemptRecord | null = null;
   private flying = false;
@@ -38,7 +40,7 @@ export class SiteApp {
     this.arena = new Arena(this.$<HTMLCanvasElement>('arena'));
     this.chart = new LearningChart(this.$<HTMLCanvasElement>('chart'));
     this.token();
-    void loadDisplayRegions().then(({ region, role }) => { this.specimen.setNeurons(region, role); this.bits = new Uint8Array(region.length); })
+    void loadMeta().then((meta) => { this.meta = meta; this.buildNeurons(); })
       .catch(() => { this.$('specimenNote').textContent = 'The neuron map could not be loaded. Reload the page to try again.'; });
     connect(serverUrl(), {
       message: (m) => this.onMessage(m),
@@ -54,6 +56,7 @@ export class SiteApp {
   private onMessage(m: ServerMessage) {
     switch (m.type) {
       case 'hello':
+        this.readoutGroups = m.readoutGroups; this.buildNeurons();
         this.chart.set(m.history);
         this.flying = !!m.current;
         this.lastEnd = m.history.at(-1) ?? null;
@@ -85,6 +88,14 @@ export class SiteApp {
         break;
       }
     }
+  }
+
+  /** The dot cloud needs both the neuron map and the list of neurons the flap is read from. */
+  private buildNeurons() {
+    if (!this.meta) return;
+    const { region, role } = pickDisplayNeurons(this.meta, this.readoutGroups);
+    this.specimen.setNeurons(region, role);
+    this.bits = new Uint8Array(region.length);
   }
 
   private setStats(s: Stats) {
@@ -154,7 +165,7 @@ export class SiteApp {
 const LEGEND = [
   [REGION_COLORS[0], 'Optic lobes'], [REGION_COLORS[2], 'Central brain'], [REGION_COLORS[3], 'Neck connective'],
   [REGION_COLORS[4], 'Nerve cord'], [REGION_COLORS[6], 'Motor neurons'], [REGION_COLORS[10], 'Sensory neurons in eyes, body and wings'],
-  [ROLE_COLORS.input, 'Cells that see the game'], [ROLE_COLORS.readout, 'Cells a flap is read from']
+  [ROLE_COLORS.input, 'Cells that see the game'], [ROLE_COLORS.readout, 'Cells the flap is read from']
 ].map(([color, label]) => `<li><i style="background:${color}"></i>${label}</li>`).join('');
 
 const TEMPLATE = `
@@ -223,11 +234,11 @@ const TEMPLATE = `
       </div>
       <div>
         <h3>How it sees and flaps</h3>
-        <p>The game is turned into input for visual neurons that detect looming objects and small targets (LC4, LPLC2, LC10a). Whether to flap is read from 12 groups of descending neurons, the cells that carry commands from the brain to the body.</p>
+        <p>The game reaches the fly as three separate signals on three of its visual populations: how far below or above the gap it is (LC10a, its small-target cells), how fast it is falling or rising (LPLC2), and how close the pipe is (LC4, its looming cells). The flap is read from 64 populations further inside the brain, the ones whose firing was measured to follow the gap.</p>
       </div>
       <div>
         <h3>How trading teaches it</h3>
-        <p>Every <span id="price">0.05</span> SOL of fees buys one attempt. Each attempt flies with a slightly changed readout of those descending neurons. After ten attempts the fly keeps what went further. Thirteen numbers learn; nothing about the flight is scripted.</p>
+        <p>Every <span id="price">0.05</span> SOL of fees buys one attempt. Each attempt flies with a slightly changed readout of those descending neurons. After ten attempts the fly keeps what went further. Sixty-five numbers learn; nothing about the flight is scripted.</p>
       </div>
     </div>
     <p class="honest">This is an experiment, not a claim that a fly understands Flappy Bird. The way the game reaches the eyes and the way a flap is read out are designed interfaces. When it flies badly, you are watching it fly badly.</p>

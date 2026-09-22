@@ -1,8 +1,9 @@
 // Runs the one shared fly: paid attempts from the queue, idle brain in between, learning after each attempt.
 import type { Connectome } from '../src/core/connectome';
-import { NeuralPolicy, PARAM_COUNT, type Normalization } from '../src/core/policy';
+import { NeuralPolicy, paramCount, type Readout } from '../src/core/policy';
 import type { SensoryGroups } from '../src/core/sensing';
-import { FlappyGame } from '../src/game/FlappyGame';
+import { DEFAULT_COURSE, FlappyGame, type Course } from '../src/game/FlappyGame';
+import { GAME_SPEED, STEP_SECONDS } from '../src/core/pace';
 import { pickDisplayNeurons } from '../src/shared/display';
 import { encodeBits, type AttemptRecord, type AttemptStart, type ServerMessage, type Stats } from '../src/shared/protocol';
 import { FeeAccumulator } from './fees/accumulator';
@@ -10,15 +11,15 @@ import type { FeeEvent, WatcherCursor } from './fees/solanaWatcher';
 import { fitness, initialTrainer, Trainer, type Sample, type TrainerState } from './trainer';
 
 export interface PersistedState {
-  version: 1; trainer: TrainerState; norm: Normalization;
+  version: 1; trainer: TrainerState; readout: Readout;
   queue: number; pendingLamports: number; totalFeeLamports: number;
   attempts: number; bestScore: number; bestFitness: number;
   watchers: Record<string, WatcherCursor>; balances: Record<string, number>; history: AttemptRecord[];
 }
 
-export function freshState(norm: Normalization): PersistedState {
+export function freshState(readout: Readout): PersistedState {
   return {
-    version: 1, trainer: initialTrainer([...Array(PARAM_COUNT - 1).fill(0), -0.35]), norm,
+    version: 1, trainer: initialTrainer([...Array(paramCount(readout) - 1).fill(0), -0.35]), readout,
     queue: 0, pendingLamports: 0, totalFeeLamports: 0, attempts: 0, bestScore: 0, bestFitness: 0, watchers: {}, balances: {}, history: []
   };
 }
@@ -32,9 +33,10 @@ export interface FlyServerOptions {
   feeSource: Stats['feeSource']; feeWallets: string[];
   save: (s: PersistedState) => void; out: Outbox;
   rand?: () => number; capSeconds?: number; pauseTicks?: number; historyLimit?: number;
+  course?: Course; gameSpeed?: number;
 }
 
-const DT = 0.02, ACTIVITY_EVERY = 5;
+const ACTIVITY_EVERY = 5;
 
 export class FlyServer {
   private readonly state: PersistedState;
@@ -52,11 +54,11 @@ export class FlyServer {
 
   constructor(private readonly o: FlyServerOptions) {
     this.state = o.state;
-    this.policy = new NeuralPolicy(o.brain, o.groups, o.state.norm);
+    this.policy = new NeuralPolicy(o.brain, o.groups, o.state.readout);
     this.trainer = new Trainer(o.state.trainer, o.rand);
     this.fees = new FeeAccumulator(o.lamportsPerAttempt, o.state.pendingLamports);
-    this.game = new FlappyGame(1, (cause) => { this.deathCause = cause; });
-    const display = pickDisplayNeurons(o.brain.meta);
+    this.game = new FlappyGame(1, (cause) => { this.deathCause = cause; }, o.course ?? DEFAULT_COURSE);
+    const display = pickDisplayNeurons(o.brain.meta, o.state.readout.names);
     this.displayIndexOf = new Int32Array(o.brain.n).fill(-1);
     display.ids.forEach((id, k) => { this.displayIndexOf[id] = k; });
     this.hits = new Uint8Array(display.ids.length);
@@ -74,7 +76,7 @@ export class FlyServer {
   }
 
   hello(): ServerMessage {
-    return { type: 'hello', stats: this.stats(), history: this.state.history.slice(-300), current: this.phase === 'flying' ? this.current : null, theta: this.state.trainer.theta, displayCount: this.displayCount };
+    return { type: 'hello', stats: this.stats(), history: this.state.history.slice(-300), current: this.phase === 'flying' ? this.current : null, theta: this.state.trainer.theta, displayCount: this.displayCount, readoutGroups: this.state.readout.names };
   }
 
   /** Snapshot for disk. An attempt in flight counts as still queued, so a crash never loses a paid attempt. */
@@ -120,7 +122,7 @@ export class FlyServer {
   private flyStep() {
     const g = this.game, { flap, p } = this.policy.tick(g.capture(), g.elapsed * 1000);
     if (flap) g.flap();
-    g.update(DT);
+    g.update(STEP_SECONDS * (this.o.gameSpeed ?? GAME_SPEED));
     this.o.out.json({
       type: 'frame', t: +g.elapsed.toFixed(2), y: +g.bird.y.toFixed(1), vy: +g.bird.velocityY.toFixed(1),
       pipes: g.pipes.map((q) => [+q.x.toFixed(1), +q.gapTop.toFixed(1), +q.gapBottom.toFixed(1)] as [number, number, number]),

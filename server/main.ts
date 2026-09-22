@@ -1,6 +1,6 @@
 // Entry point: `npm run server`. Loads the connectome, restores learning state, starts fees + the 50 Hz loop.
 import { buildGroups } from '../src/core/sensing';
-import { calibrate } from '../src/core/calibrate';
+import { calibrateReadout } from '../src/core/calibrate';
 import { loadBrain } from './brainFiles';
 import { Broadcaster } from './broadcast';
 import { readConfig } from './config';
@@ -19,8 +19,10 @@ log(`connectome ready: ${brain.n.toLocaleString()} neurons`);
 
 let state = loadState<PersistedState>(cfg.stateFile, () => ({ version: 1 }) as PersistedState);
 if (!state.trainer) {
-  log('first start: calibrating readout normalisation (~30 s)');
-  state = freshState(calibrate(brain, groups));
+  log('first start: measuring which neurons to read the flap from (~1 min)');
+  const readout = calibrateReadout(brain, groups, brain.meta, { keep: cfg.readoutSize });
+  log(`readout: ${readout.names.length} groups, strongest ${readout.names.slice(0, 5).join(', ')}`);
+  state = freshState(readout);
   saveState(cfg.stateFile, state);
 }
 log(`state: ${state.attempts} attempts, generation ${state.trainer.generation}, queue ${state.queue}`);
@@ -30,7 +32,7 @@ const out = new Broadcaster({ hello: () => fly!.hello(), stats: () => fly!.stats
 state.watchers ??= {}; state.balances ??= {};
 fly = new FlyServer({
   brain, groups, state, lamportsPerAttempt: cfg.lamportsPerAttempt, feeSource: cfg.feeSource, feeWallets: cfg.feeWallets,
-  save: (s) => saveState(cfg.stateFile, s), out
+  save: (s) => saveState(cfg.stateFile, s), out, course: cfg.course, gameSpeed: cfg.gameSpeed
 });
 
 let stopFees: () => void = () => undefined;

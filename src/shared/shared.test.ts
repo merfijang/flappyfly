@@ -37,7 +37,7 @@ describe('display neurons', () => {
   });
 
   it('always draws every game-input and readout neuron, with its role', () => {
-    const d = pickDisplayNeurons(meta), shown = new Map(Array.from(d.ids, (id, k) => [id, d.role[k]]));
+    const d = pickDisplayNeurons(meta, ['DNp01 L', 'DNp01 R']), shown = new Map(Array.from(d.ids, (id, k) => [id, d.role[k]]));
     for (let i = 0; i < n; i++) {
       if (typeIdx[i] === 1 || typeIdx[i] === 2) expect(shown.get(i)).toBe(ROLE.input);
       if (typeIdx[i] === 3) expect(shown.get(i)).toBe(ROLE.readout);
@@ -45,7 +45,7 @@ describe('display neurons', () => {
   });
 
   it('samples deterministically, within quotas, without duplicates', () => {
-    const a = pickDisplayNeurons(meta), b = pickDisplayNeurons(meta);
+    const a = pickDisplayNeurons(meta, ['DNp01 L']), b = pickDisplayNeurons(meta, ['DNp01 L']);
     expect(a.ids).toEqual(b.ids);
     expect(new Set(a.ids).size).toBe(a.ids.length);
     REGIONS.forEach((_, r) => expect(a.region.filter((x) => x === r).length).toBeLessThanOrEqual(REGION_QUOTA[r]));

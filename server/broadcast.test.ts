@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { buildGroups, FEATURES } from '../src/core/sensing';
+import { buildGroups } from '../src/core/sensing';
 import { tinyBrain } from '../src/core/testing';
 import type { ServerMessage } from '../src/shared/protocol';
 import { Broadcaster } from './broadcast';
@@ -15,7 +15,7 @@ describe('server over WebSocket', () => {
     let fly: FlyServer | undefined;
     const out = new Broadcaster({ hello: () => fly!.hello(), stats: () => fly!.stats() });
     fly = new FlyServer({
-      brain, groups: buildGroups(brain.meta), state: freshState({ mean: FEATURES.map(() => 0), std: FEATURES.map(() => 1) }),
+      brain, groups: buildGroups(brain.meta), state: freshState({ names: ['DNp01 L'], mean: [0], std: [1] }),
       lamportsPerAttempt: 100, feeSource: 'mock', feeWallets: [], save: () => undefined, out
     });
     const port = await out.listen(0);

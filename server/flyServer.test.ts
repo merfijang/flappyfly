@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { buildGroups, FEATURES } from '../src/core/sensing';
+import { buildGroups } from '../src/core/sensing';
 import { tinyBrain } from '../src/core/testing';
 import type { ServerMessage } from '../src/shared/protocol';
 import { FlyServer, freshState, type PersistedState } from './flyServer';
 
-const norm = { mean: FEATURES.map(() => 0), std: FEATURES.map(() => 1) };
+const readout = { names: ['DNp01 L', 'DNp01 R'], mean: [0, 0], std: [1, 1] };
 
 function setup(extra: Partial<ConstructorParameters<typeof FlyServer>[0]> = {}) {
   const brain = tinyBrain(), msgs: ServerMessage[] = [], bins: Uint8Array[] = [], saves: PersistedState[] = [];
   let r = 5; const rand = () => (r = (Math.imul(r, 1664525) + 1013904223) >>> 0) / 4294967296;
   const fly = new FlyServer({
-    brain, groups: buildGroups(brain.meta), state: freshState(norm), lamportsPerAttempt: 100, feeSource: 'mock', feeWallets: [],
+    brain, groups: buildGroups(brain.meta), state: freshState(readout), lamportsPerAttempt: 100, feeSource: 'mock', feeWallets: [],
     save: (s) => saves.push(structuredClone(s)), out: { json: (m) => msgs.push(m), binary: (b) => bins.push(b) }, rand, ...extra
   });
   const of = <T extends ServerMessage['type']>(t: T) => msgs.filter((m): m is Extract<ServerMessage, { type: T }> => m.type === t);
@@ -66,7 +66,7 @@ describe('FlyServer', () => {
   });
 
   it('ends an attempt at the time cap', () => {
-    const { fly, of } = setup({ capSeconds: 0.1 });
+    const { fly, of } = setup({ capSeconds: 0.1, gameSpeed: 1 });
     fly.addFee(fee(100));
     for (let i = 0; i < 10; i++) fly.tick();
     expect(of('attempt_end')[0].record).toMatchObject({ seconds: 0.1, cause: 'SURVIVED THE TIME LIMIT.' });
@@ -80,7 +80,7 @@ describe('FlyServer', () => {
   });
 
   it('keeps only the most recent history', () => {
-    const { fly, saves } = setup({ capSeconds: 0.02, pauseTicks: 1, historyLimit: 3 });
+    const { fly, saves } = setup({ capSeconds: 0.02, pauseTicks: 1, historyLimit: 3, gameSpeed: 1 });
     fly.addFee(fee(500));
     for (let i = 0; i < 40; i++) fly.tick();
     expect(saves.at(-1)!.history.map((h) => h.n)).toEqual([3, 4, 5]);

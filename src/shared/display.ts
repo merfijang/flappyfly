@@ -1,7 +1,7 @@
 // Which neurons the site draws, where, and what they do. Server and site both derive this
 // from meta.bin, so the activity bitset needs no index list on the wire.
 import type { NeuronMeta } from '../core/connectome';
-import { buildGroups } from '../core/sensing';
+import { buildGroups, groupsByName } from '../core/sensing';
 
 /**
  * Parts of the nervous system, in the order the site colours them. Central neurons sit in the
@@ -33,13 +33,14 @@ export function regionOf(superclass: string, side: number, index: number) {
 }
 
 /**
- * Every game-input neuron (LC4, LPLC2, LC10a) and every readout neuron is always drawn;
- * the rest of each region is an even sample up to its quota.
+ * Every game-input neuron (LC4, LPLC2, LC10a) and every neuron the flap is read from is always
+ * drawn; the rest of each region is an even sample up to its quota. `readoutGroups` comes from the
+ * server (it is measured at calibration), so both sides must pass the same list.
  */
-export function pickDisplayNeurons(meta: NeuronMeta) {
+export function pickDisplayNeurons(meta: NeuronMeta, readoutGroups: readonly string[] = []) {
   const g = buildGroups(meta), role = new Uint8Array(meta.n);
   for (const ids of [...g.lc4, ...g.lplc2, g.lc10L, g.lc10R]) for (const id of ids) role[id] = ROLE.input;
-  for (const ids of g.features) for (const id of ids) role[id] = ROLE.readout;
+  for (const ids of groupsByName(meta, readoutGroups)) for (const id of ids) role[id] = ROLE.readout;
 
   const special: number[][] = REGIONS.map(() => []), rest: number[][] = REGIONS.map(() => []);
   for (let i = 0; i < meta.n; i++) (role[i] ? special : rest)[regionOf(meta.superclasses[meta.classIdx[i]], meta.side[i], i)].push(i);

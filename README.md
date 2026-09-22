@@ -47,6 +47,9 @@ First server start calibrates the readout (~30 s) and writes `data/state.json`. 
 | `STATE_FILE` | `data/state.json` | Put this on a persistent volume |
 | `PORT` | `8787` | HTTP + WebSocket (`/ws`, `/health`, `/stats`) |
 | `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` behind a reverse proxy) |
+| `GAME_SPEED` | `0.5` | Game pace relative to real time (the fly needs ~200 ms to react) |
+| `COURSE_GAP` / `COURSE_SPAWN` / `COURSE_PIPE_SPEED` | `210` / `2.1` / `132` | Gap height, seconds between pipes, pipe speed |
+| `READOUT_SIZE` | `64` | How many neuron groups the flap is read from |
 
 The watcher counts only SOL flowing into `FEE_WALLET` (claims/withdrawals are ignored), dedupes by signature and persists its cursor. On the very first start it records the current tip and counts only fees after that.
 
