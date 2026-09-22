@@ -77,7 +77,7 @@ describe('SolanaFeeWatcher', () => {
   it('pages through more signatures than one request returns', async () => {
     const chain = fakeChain([{ sig: 's0', tx: tx(0, 1) }]);
     const fees: FeeEvent[] = [];
-    const w = new SolanaFeeWatcher(chain.rpc, WALLET, { initialized: true, lastSignature: 's0' }, (e) => fees.push(e), 3);
+    const w = new SolanaFeeWatcher(chain.rpc, WALLET, { initialized: true, lastSignature: 's0' }, (e) => fees.push(e), { pageSize: 3 });
     for (let i = 1; i <= 7; i++) chain.entries.push({ sig: `s${i}`, tx: tx(0, i) });
     await w.poll();
     expect(fees.map((f) => f.lamports)).toEqual([1, 2, 3, 4, 5, 6, 7]);
@@ -142,7 +142,7 @@ describe('counting one coin', () => {
     const entries = [{ sig: 'a', tx: tx(0, 1) }, { sig: 'mine', tx: withMint('Coin111') as never }, { sig: 'theirs', tx: withMint('Other22') as never }];
     const chain = fakeChain([entries[0]]);
     const fees: FeeEvent[] = [];
-    const w = new SolanaFeeWatcher(chain.rpc, WALLET, { initialized: true, lastSignature: 'a' }, (e) => fees.push(e), 100, 'Coin111');
+    const w = new SolanaFeeWatcher(chain.rpc, WALLET, { initialized: true, lastSignature: 'a' }, (e) => fees.push(e), { mint: 'Coin111' });
     chain.entries.push(entries[1], entries[2]);
     await w.poll();
     expect(fees.map((f) => f.signature)).toEqual(['mine']);

@@ -58,22 +58,35 @@ export function inflowFromTx(tx: TxJson, wallet: string) {
   return Math.max(0, tx.meta.postBalances[i] - tx.meta.preBalances[i]);
 }
 
+export interface WatchOptions {
+  /** Count only fees from trades of this mint, and page its signatures instead of the wallet own. */
+  mint?: string | null;
+  pageSize?: number;
+}
+
 export class SolanaFeeWatcher {
   private state: WatcherCursor;
+  private readonly wallets: string[];
+  private readonly source: string;
+  private readonly mint: string | null;
+  private readonly pageSize: number;
   /** Highest transaction version we ask for; raised if the node reports a newer one. */
   private txVersion = 1;
 
-  constructor(private readonly rpc: RpcClient, private readonly wallet: string, cursor: WatcherCursor | null,
-    private readonly onFee: (e: FeeEvent) => void, private readonly pageSize = 100,
-    /** Count only fees that came from trading this mint. */
-    private readonly mint: string | null = null) {
+  constructor(private readonly rpc: RpcClient, wallet: string | string[], cursor: WatcherCursor | null,
+    private readonly onFee: (e: FeeEvent) => void, opts: WatchOptions = {}) {
+    this.wallets = Array.isArray(wallet) ? wallet : [wallet];
+    this.mint = opts.mint ?? null;
+    this.pageSize = opts.pageSize ?? 100;
+    // with a mint, the coin own trades are the short list to walk; the vault list is the creator whole portfolio
+    this.source = this.mint ?? this.wallets[0];
     this.state = cursor ?? { initialized: false, lastSignature: null };
   }
 
   get cursor(): WatcherCursor { return { ...this.state }; }
 
   private signatures(opts: { limit: number; until?: string; before?: string }) {
-    return this.rpc.call<SignatureInfo[]>('getSignaturesForAddress', [this.wallet, { ...opts, commitment: 'confirmed' }]);
+    return this.rpc.call<SignatureInfo[]>('getSignaturesForAddress', [this.source, { ...opts, commitment: 'confirmed' }]);
   }
 
   async poll() {
@@ -95,7 +108,7 @@ export class SolanaFeeWatcher {
       if (!tx) return; // not served yet; retry from here next poll
       this.state = { initialized: true, lastSignature: s.signature };
       if (this.mint && !touchesMint(tx, this.mint)) continue;
-      const lamports = inflowFromTx(tx, this.wallet);
+      const lamports = this.wallets.reduce((sum, w) => sum + inflowFromTx(tx, w), 0);
       if (lamports > 0) this.onFee({ signature: s.signature, lamports, slot: tx.slot, blockTime: tx.blockTime });
     }
   }

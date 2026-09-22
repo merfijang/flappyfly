@@ -42,12 +42,15 @@ if (cfg.feeSource === 'mock') {
 } else {
   const rpc = httpRpc(cfg.rpcUrl), stops: (() => void)[] = [];
   stopFees = () => stops.forEach((stop) => stop());
-  for (const wallet of cfg.feeWallets) {
+  // one coin: walk that coin trades once and credit every vault it paid. Otherwise: one watcher per vault.
+  const groups: string[][] = cfg.feeMint ? [cfg.feeWallets] : cfg.feeWallets.map((w) => [w]);
+  for (const wallets of groups) {
+    const wallet = cfg.feeMint ? `mint:${cfg.feeMint}` : wallets[0];
     const position = () => (watcher instanceof BalanceFeeWatcher ? { balance: watcher.lastBalance } : { cursor: watcher.cursor });
     const onFee = (e: FeeEvent) => { log('fee', e.lamports / 1e9, 'SOL into', wallet, e.signature); fly!.addFee(e, { wallet, ...position() }); };
     const watcher: BalanceFeeWatcher | SolanaFeeWatcher = cfg.feeMode === 'balance'
-      ? new BalanceFeeWatcher(rpc, wallet, state.balances[wallet] ?? null, onFee)
-      : new SolanaFeeWatcher(rpc, wallet, state.watchers[wallet] ?? null, onFee, 100, cfg.feeMint);
+      ? new BalanceFeeWatcher(rpc, wallets[0], state.balances[wallet] ?? null, onFee)
+      : new SolanaFeeWatcher(rpc, wallets, state.watchers[wallet] ?? null, onFee, { mint: cfg.feeMint });
     // the first poll may only record a baseline; persist that before watching
     void watcher.poll()
       .then(() => { fly!.setWatcher(wallet, position()); saveState(cfg.stateFile, fly!.snapshot()); })
