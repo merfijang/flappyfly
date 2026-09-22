@@ -44,17 +44,22 @@ First server start calibrates the readout (~30 s) and writes `data/state.json`. 
 | `MOCK_FEE_EVERY_MS` | `4000` | Fake fee interval in mock mode |
 | `STATE_FILE` | `data/state.json` | Put this on a persistent volume |
 | `PORT` | `8787` | HTTP + WebSocket (`/ws`, `/health`, `/stats`) |
+| `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` behind a reverse proxy) |
 
 The watcher counts only SOL flowing into `FEE_WALLET` (claims/withdrawals are ignored), dedupes by signature and persists its cursor. On the very first start it records the current tip and counts only fees after that.
 
 ## Site env
 
-`VITE_SERVER_URL` (default `wss://api.flappyfly.site/ws`, or `ws://localhost:8787/ws` on localhost), `VITE_TOKEN_CA` (shows the copy button once set).
+`VITE_SERVER_URL` (default: same host at `/ws`; `ws://<host>:8787/ws` when served by Vite on :5173), `VITE_TOKEN_CA` (shows the copy button once set).
 
 ## Deploy
 
-- Site: Vercel, domain `flappyfly.site`, build `npm run build`, output `dist`.
-- Server: any always-on box, 1 vCPU / 512 MB is enough (≈40% of one core, ≈200 MB RAM). Persistent volume for `STATE_FILE`. Point `api.flappyfly.site` at it with TLS (WebSocket needs `wss://`).
+One VPS runs both: Caddy serves `dist/` and HTTPS, and proxies `/ws`, `/stats`, `/health` to the node process (`deploy/`).
+
+- `deploy/flappyfly.service` — systemd unit (user `flappyfly`, state in `/var/lib/flappyfly`, env in `/etc/flappyfly.env`, template `deploy/flappyfly.env.example`).
+- `deploy/Caddyfile` — site + proxy for flappyfly.site / www, plus plain-IP access.
+- DNS: `A @` and `A www` → the VPS IP.
+- Load: ≈40% of one core, ≈200 MB RAM; each viewer ≈25 KB/s of WebSocket.
 
 ## Tests
 

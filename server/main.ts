@@ -55,18 +55,20 @@ if (cfg.feeSource === 'mock') {
 log(`1 attempt = ${cfg.lamportsPerAttempt / 1e9} SOL`);
 
 // fixed 50 Hz: catch up at most 5 steps, drop further lag rather than spiral
-let next = performance.now(), running = true;
+let next = performance.now(), running = true, tickMs = 0, ticks = 0;
+// one health line a minute: how much of the 20 ms budget a tick uses, and who is watching
+setInterval(() => { const s = fly!.stats(); log(`tick ${(tickMs / Math.max(1, ticks)).toFixed(1)} ms avg, ${ticks} ticks, ${out.viewers} viewers, attempts ${s.attempts}, queue ${s.queue}`); tickMs = 0; ticks = 0; }, 60_000).unref();
 const loop = () => {
   if (!running) return;
   const now = performance.now();
-  for (let n = 0; now >= next && n < 5; n++) { fly!.tick(); next += 20; }
+  for (let n = 0; now >= next && n < 5; n++) { const t0 = performance.now(); fly!.tick(); tickMs += performance.now() - t0; ticks++; next += 20; }
   if (now - next > 200) next = now;
   setTimeout(loop, Math.max(0, next - performance.now()));
 };
 loop();
 
-const port = await out.listen(cfg.port);
-log(`listening on :${port} (ws /ws, GET /health, GET /stats)`);
+const port = await out.listen(cfg.port, cfg.host);
+log(`listening on ${cfg.host}:${port} (ws /ws, GET /health, GET /stats)`);
 
 const shutdown = async () => {
   running = false; stopFees();

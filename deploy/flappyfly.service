@@ -1,0 +1,22 @@
+[Unit]
+Description=FlappyFly fly server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=flappyfly
+WorkingDirectory=/opt/flappyfly
+EnvironmentFile=/etc/flappyfly.env
+ExecStart=/usr/local/bin/node /opt/flappyfly/node_modules/tsx/dist/cli.mjs server/main.ts
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=15
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/flappyfly
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

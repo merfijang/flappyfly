@@ -1,0 +1,22 @@
+# Site + fly server on one host. /ws, /stats and /health go to the node process.
+(flappyfly) {
+	encode gzip
+	@api path /ws /stats /health
+	handle @api {
+		reverse_proxy 127.0.0.1:8787
+	}
+	handle {
+		root * /opt/flappyfly/dist
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+flappyfly.site, www.flappyfly.site {
+	import flappyfly
+}
+
+# plain-IP access for checks before DNS points here
+http://{$VPS_IP} {
+	import flappyfly
+}

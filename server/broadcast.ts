@@ -24,7 +24,7 @@ export class Broadcaster implements Outbox {
 
   get viewers() { return this.wss.clients.size; }
 
-  listen(port: number) { return new Promise<number>((ok) => this.http.listen(port, () => ok((this.http.address() as { port: number }).port))); }
+  listen(port: number, host?: string) { return new Promise<number>((ok) => this.http.listen(port, host, () => ok((this.http.address() as { port: number }).port))); }
 
   json(msg: ServerMessage) { this.send(JSON.stringify(msg)); }
   binary(bytes: Uint8Array) { this.send(bytes); }

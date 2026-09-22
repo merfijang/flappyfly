@@ -4,7 +4,9 @@ import type { ServerMessage } from '../shared/protocol';
 export function serverUrl() {
   const env = import.meta.env.VITE_SERVER_URL as string | undefined;
   if (env) return env;
-  return ['localhost', '127.0.0.1'].includes(location.hostname) ? 'ws://localhost:8787/ws' : 'wss://api.flappyfly.site/ws';
+  // dev: Vite on :5173, fly server on :8787. Production: the fly server sits behind the same host at /ws.
+  if (location.port === '5173') return `ws://${location.hostname}:8787/ws`;
+  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 }
 
 export function connect(url: string, on: { message(m: ServerMessage): void; activity(bytes: Uint8Array): void; status(live: boolean): void }) {
