@@ -28,6 +28,15 @@ if (!state.trainer || !state.readout) {
 }
 log(`state: ${state.attempts} attempts, generation ${state.trainer.generation}, queue ${state.queue}`);
 
+const rpc = httpRpc(cfg.rpcUrl);
+// resolve the coin before the server is built, so its fee vaults are part of what the site shows
+if (cfg.feeSource === 'solana' && cfg.feeToken) {
+  const coin = await resolvePumpCoin(rpc, cfg.feeToken);
+  cfg.feeWallets = coin.vaults;
+  log(`coin ${coin.mint}: creator ${coin.creator}, ${coin.migrated ? 'trading on PumpSwap' : 'still on the bonding curve'}`);
+  log(`fee vaults: ${coin.vaults.join(', ')}`);
+}
+
 let fly: FlyServer | undefined;
 const out = new Broadcaster({ hello: () => fly!.hello(), stats: () => fly!.stats() }, cfg.corsOrigin);
 state.watchers ??= {}; state.balances ??= {};
@@ -41,13 +50,7 @@ if (cfg.feeSource === 'mock') {
   stopFees = mockFees(cfg.mockFeeEveryMs, (e) => fly!.addFee(e), Math.random, cfg.mockTotalLamports);
   log(`fees: MOCK, one fake inflow every ${cfg.mockFeeEveryMs} ms${Number.isFinite(cfg.mockTotalLamports) ? `, ${cfg.mockTotalLamports / 1e9} SOL in total` : ''}`);
 } else {
-  const rpc = httpRpc(cfg.rpcUrl), stops: (() => void)[] = [];
-  if (cfg.feeToken) {
-    const coin = await resolvePumpCoin(rpc, cfg.feeToken);
-    cfg.feeWallets = coin.vaults;
-    log(`coin ${coin.mint}: creator ${coin.creator}, ${coin.migrated ? 'trading on PumpSwap' : 'still on the bonding curve'}`);
-    log(`fee vaults: ${coin.vaults.join(', ')}`);
-  }
+  const stops: (() => void)[] = [];
   stopFees = () => stops.forEach((stop) => stop());
   // one coin: walk that coin trades once and credit every vault it paid. Otherwise: one watcher per vault.
   const groups: string[][] = cfg.feeMint ? [cfg.feeWallets] : cfg.feeWallets.map((w) => [w]);
