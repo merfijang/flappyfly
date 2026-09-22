@@ -181,14 +181,6 @@ const TEMPLATE = `
     </div>
   </section>
 
-  <section class="ca-strip" aria-label="Contract address">
-    <div>
-      <p class="ca-label" id="caLabel">Contract address</p>
-      <p class="ca-value" id="caValue">soon</p>
-    </div>
-    <button type="button" id="copy" class="copy"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.5"/></svg><span id="copyLabel">Copy</span></button>
-  </section>
-
   <section class="meter" aria-label="Fees and progress">
     <div class="bar" role="presentation"><i id="bar"></i></div>
     <p id="meterText" class="meter-text">Connecting…</p>
@@ -200,6 +192,14 @@ const TEMPLATE = `
       <div><dt>Fees collected</dt><dd id="fFees">0 SOL</dd></div>
     </dl>
     <p id="source" class="source"></p>
+  </section>
+
+  <section class="ca-strip" aria-label="Contract address">
+    <div>
+      <p class="ca-label" id="caLabel">Contract address</p>
+      <p class="ca-value" id="caValue">soon</p>
+    </div>
+    <button type="button" id="copy" class="copy"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.5"/></svg><span id="copyLabel">Copy</span></button>
   </section>
 
   <section class="learning">
