@@ -38,20 +38,20 @@ Files: `server/fees/accumulator.ts`, `server/fees/solanaWatcher.ts`, `server/fee
 ### Task 2: State store ✅
 `server/stateStore.ts`: `loadState(path, fresh)` (missing → fresh; corrupt/other version → `.bak` + fresh), `saveState(path, s)` (tmp + rename).
 
-### Task 3: Core policy + trainer
+### Task 3: Core policy + trainer ✅
 Files: `src/core/connectome.ts` ✅, `src/core/sensing.ts` ✅, `src/core/policy.ts`, `src/core/calibrate.ts`, `server/trainer.ts` (+ tests with a synthetic tiny connectome)
 - `NeuralPolicy(brain, groups, norm)`: `.begin(theta, seed)`, `.tick(state, nowMs) → { flap, p }`, `.idle()`; `p = sigmoid(θ_b + Σ θ_k (trace_k − mean_k)/std_k)`, request if p ≥ 0.5, `FlyDecoder(2, 260)` gate. Test: bias +20 flaps regardless of state, bias −20 never flaps; `tick` result identical for two different game states when neural input is identical (policy does not read game state).
 - `calibrate(brain, groups, steps) → { mean, std }` deterministic (seeded), std floor 0.02.
 - `Trainer(state, rand)`: `.next() → { theta, seed, index }` (antithetic: odd index = −ε of previous, same seed), `.report(index, fitness)`; after `POP` reports update θ with centered ranks; `state.generation++`. Tests: pair shares seed and opposite noise; update moves θ toward the better sample; generation counter; state serializable & resumable mid-generation.
 - `fitness(score, seconds) = score + seconds / 2.1`.
 
-### Task 4: Protocol + display neurons
+### Task 4: Protocol + display neurons ✅
 Files: `src/shared/protocol.ts`, `src/shared/display.ts` (+ tests)
 - Message types `hello | frame | attempt_start | attempt_end | fee | stats`; binary message = activity bitset over display neurons.
 - `pickDisplayNeurons(meta) → { ids: Int32Array, region: Uint8Array }` deterministic stratified sample (~16k) by superclass → region (eyeL, eyeR, head, neck, thorax, abdomen, legs).
 - `encodeBits(hits) / decodeBits(bytes, count)` round-trip.
 
-### Task 5: Server runtime
+### Task 5: Server runtime ✅
 Files: `server/flyServer.ts`, `server/broadcast.ts`, `server/main.ts`, `server/config.ts` (+ integration test)
 - `FlyServer` owns brain, policy, trainer, game, accumulator, state; `.addFee(e)`, `.tick()` (50 Hz): idle brain step or attempt step; death/cap → fitness → trainer.report → history (cap 2000) → save → `attempt_end`; 1.5 s pause between attempts.
 - Broadcast: `frame` every tick, activity bitset every 5 ticks (OR of fired over those ticks), events.
@@ -59,7 +59,7 @@ Files: `server/flyServer.ts`, `server/broadcast.ts`, `server/main.ts`, `server/c
 - Config from env (spec list); `FEE_SOURCE=mock` default.
 - Integration test: start with mock fees + tiny brain → WS client gets `hello`, `attempt_start`, `frame`, binary activity, `attempt_end`.
 
-### Task 6: Spectator site
+### Task 6: Spectator site ✅
 Files: `index.html`, `src/main.ts`, `src/site/*` (App, net client with reconnect, SpecimenRenderer, GameRenderer adapter, LearningChart, styles); remove the old button UI + worker from the bundle.
 - Look: flybrain.online-like instrument panel (dark ground, cyan/amber, serif/sans/mono trio), own code.
 - Specimen: each dot = a display neuron placed by region, flashes on activity bits; wings flutter on flap.
@@ -67,7 +67,7 @@ Files: `index.html`, `src/main.ts`, `src/site/*` (App, net client with reconnect
 - Readouts: attempt #, generation, best, fees total, SOL to next attempt, queue; learning curve; event feed; footer attribution + honest note + CA placeholder.
 - `VITE_SERVER_URL` (default `ws://localhost:8787/ws`).
 
-### Task 7: Verify end to end
+### Task 7: Verify end to end ✅ (deploy is a separate step)
 - `npm test`, `npm run build`, typecheck server.
 - Run server (mock fees) + site; screenshot; watch several attempts; restart server → learning resumes.
 - README section: run, env, deploy notes.
