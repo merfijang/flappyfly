@@ -7,6 +7,7 @@ import { brainMetaUrl, connect, serverUrl } from './net';
 import { REGION_COLORS, ROLE_COLORS, Specimen } from './specimen';
 
 const TOKEN_CA = (import.meta.env.VITE_TOKEN_CA as string | undefined) || null;
+const TOKEN_TICKER = (import.meta.env.VITE_TOKEN_TICKER as string | undefined) || null;
 
 const sol = (lamports: number, digits = 4) => (lamports / 1e9).toFixed(digits).replace(/\.?0+$/, '') || '0';
 const sentence = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -135,13 +136,17 @@ export class SiteApp {
     while (list.children.length > 9) list.lastElementChild!.remove();
   }
 
+  /** Contract address strip: "soon" and a disabled button until VITE_TOKEN_CA is set. */
   private token() {
-    const el = this.$('ca');
-    if (!TOKEN_CA) return;
-    el.innerHTML = `<button type="button" id="copy" title="Copy the contract address"><span class="addr">${TOKEN_CA.slice(0, 4)}…${TOKEN_CA.slice(-4)}</span> <span id="copyLabel">Copy address</span></button>`;
-    this.$('copy').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(TOKEN_CA); this.$('copyLabel').textContent = 'Copied'; }
-      catch { this.$('copyLabel').textContent = 'Select and copy manually'; }
+    if (TOKEN_TICKER) this.$('caLabel').textContent = `Contract address · ${TOKEN_TICKER}`;
+    const btn = this.$<HTMLButtonElement>('copy'), label = this.$('copyLabel');
+    if (!TOKEN_CA) { btn.disabled = true; btn.title = 'The contract address is published at launch'; return; }
+    this.$('caValue').textContent = TOKEN_CA;
+    let timer = 0;
+    btn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(TOKEN_CA); label.textContent = 'Copied'; }
+      catch { label.textContent = 'Press Ctrl+C'; getSelection()?.selectAllChildren(this.$('caValue')); }
+      clearTimeout(timer); timer = window.setTimeout(() => { label.textContent = 'Copy'; }, 2000);
     });
   }
 }
@@ -156,7 +161,6 @@ const TEMPLATE = `
 <header class="top">
   <a class="mark" href="/">FlappyFly</a>
   <p class="live"><span id="pip" class="pip"></span><span id="liveText">Connecting to the fly</span></p>
-  <p class="ca" id="ca"></p>
 </header>
 <main>
   <section class="hero">
@@ -175,6 +179,14 @@ const TEMPLATE = `
         <figcaption id="attemptLine">Waiting for the first attempt</figcaption>
       </figure>
     </div>
+  </section>
+
+  <section class="ca-strip" aria-label="Contract address">
+    <div>
+      <p class="ca-label" id="caLabel">Contract address</p>
+      <p class="ca-value" id="caValue">soon</p>
+    </div>
+    <button type="button" id="copy" class="copy"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5"/><path d="M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.5"/></svg><span id="copyLabel">Copy</span></button>
   </section>
 
   <section class="meter" aria-label="Fees and progress">
