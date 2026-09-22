@@ -3,7 +3,7 @@ import { pickDisplayNeurons } from '../shared/display';
 import { decodeBits, type AttemptRecord, type ServerMessage, type Stats } from '../shared/protocol';
 import { Arena } from './arena';
 import { LearningChart } from './chart';
-import { connect, serverUrl } from './net';
+import { brainMetaUrl, connect, serverUrl } from './net';
 import { Specimen } from './specimen';
 
 const TOKEN_CA = (import.meta.env.VITE_TOKEN_CA as string | undefined) || null;
@@ -13,7 +13,7 @@ const sentence = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 const pipes = (n: number) => `${n} pipe${n === 1 ? '' : 's'}`;
 
 async function loadDisplayRegions() {
-  const res = await fetch('/brain/meta.bin');
+  const res = await fetch(brainMetaUrl());
   if (!res.ok || !res.body) throw new Error(`meta.bin: HTTP ${res.status}`);
   let buf = await res.arrayBuffer();
   const b = new Uint8Array(buf, 0, 2);

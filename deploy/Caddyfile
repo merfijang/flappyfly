@@ -1,4 +1,4 @@
-# Site + fly server on one host. /ws, /stats and /health go to the node process.
+# Fly server (+ site copy) on the VPS. /ws, /stats and /health go to the node process.
 (flappyfly) {
 	encode gzip
 	@api path /ws /stats /health
@@ -6,17 +6,19 @@
 		reverse_proxy 127.0.0.1:8787
 	}
 	handle {
+		# the Vercel-hosted site loads the neuron map from here
+		header /brain/* Access-Control-Allow-Origin *
 		root * /opt/flappyfly/dist
 		try_files {path} /index.html
 		file_server
 	}
 }
 
-flappyfly.site, www.flappyfly.site {
+# TLS hostname without any DNS setup: sslip.io resolves 144-31-153-206.sslip.io to the IP
+{$VPS_HOST} {
 	import flappyfly
 }
 
-# plain-IP access for checks before DNS points here
 http://{$VPS_IP} {
 	import flappyfly
 }

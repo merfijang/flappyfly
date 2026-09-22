@@ -9,6 +9,12 @@ export function serverUrl() {
   return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 }
 
+/** meta.bin comes from the fly server when the site is hosted elsewhere (VITE_SERVER_URL set). */
+export function brainMetaUrl() {
+  const env = import.meta.env.VITE_SERVER_URL as string | undefined;
+  return env ? new URL('/brain/meta.bin', env.replace(/^ws/, 'http')).toString() : '/brain/meta.bin';
+}
+
 export function connect(url: string, on: { message(m: ServerMessage): void; activity(bytes: Uint8Array): void; status(live: boolean): void }) {
   let delay = 1000;
   const open = () => {
