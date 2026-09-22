@@ -17,7 +17,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rpcUrl: env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com',
     mockFeeEveryMs: Number(env.MOCK_FEE_EVERY_MS ?? 4000), pollMs: Number(env.POLL_MS ?? 10000),
     stateFile: env.STATE_FILE ?? join(process.cwd(), 'data', 'state.json'),
-    brainDir: env.BRAIN_DIR ?? join(process.cwd(), 'public', 'brain'),
+    brainDir: env.BRAIN_DIR ?? join(process.cwd(), 'brain'),
     corsOrigin: env.CORS_ORIGIN ?? '*'
   };
 }

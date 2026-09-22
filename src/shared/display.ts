@@ -3,7 +3,7 @@
 import type { NeuronMeta } from '../core/connectome';
 
 export const REGIONS = ['eyeL', 'eyeR', 'head', 'neck', 'thorax', 'abdomen', 'legs'] as const;
-export const REGION_QUOTA = [2600, 2600, 4000, 1400, 3000, 1600, 700];
+export const REGION_QUOTA = [1400, 1400, 2400, 900, 4000, 3600, 900];
 const [EYE_L, EYE_R, HEAD, NECK, THORAX, ABDOMEN, LEGS] = REGIONS.map((_, i) => i);
 
 /** Body region for a neuron's superclass. Schematic: the CNS drawn onto a fly silhouette. */

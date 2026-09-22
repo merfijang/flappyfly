@@ -10,12 +10,12 @@ function readParts(paths: string[]) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
-export function loadMeta(dir = join(process.cwd(), 'public', 'brain')) {
+export function loadMeta(dir = join(process.cwd(), 'brain')) {
   return parseMeta(readParts([join(dir, 'meta.bin')]));
 }
 
 /** Load the exported MaleCNS files from `dir` (public/brain by default). */
-export function loadBrain(dir = join(process.cwd(), 'public', 'brain'), seed = 1) {
+export function loadBrain(dir = join(process.cwd(), 'brain'), seed = 1) {
   const manifest = JSON.parse(readFileSync(join(dir, 'brain.json'), 'utf8')) as { parts: string[]; connections: number };
   const weights = parseWeights(readParts(manifest.parts.map((p) => join(dir, p))));
   if (weights.nnz !== manifest.connections) throw new Error(`expected ${manifest.connections} connections, got ${weights.nnz}`);
