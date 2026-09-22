@@ -51,6 +51,12 @@ describe('FlyServer', () => {
     expect(saves.at(-1)!.watchers).toEqual({ VaultA: { initialized: true, lastSignature: 'sigA' }, VaultB: { initialized: true, lastSignature: 'sigB' } });
   });
 
+  it('persists a balance-mode watcher position with its fee', () => {
+    const { fly, saves } = setup();
+    fly.addFee(fee(100), { wallet: 'VaultA', balance: 12345 });
+    expect(saves.at(-1)!.balances).toEqual({ VaultA: 12345 });
+  });
+
   it('counts an attempt in flight as still queued when saving', () => {
     const { fly } = setup();
     fly.addFee(fee(200));

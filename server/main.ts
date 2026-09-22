@@ -5,7 +5,8 @@ import { loadBrain } from './brainFiles';
 import { Broadcaster } from './broadcast';
 import { readConfig } from './config';
 import { mockFees } from './fees/mockSource';
-import { httpRpc, SolanaFeeWatcher } from './fees/solanaWatcher';
+import { BalanceFeeWatcher } from './fees/balanceWatcher';
+import { httpRpc, SolanaFeeWatcher, type FeeEvent } from './fees/solanaWatcher';
 import { FlyServer, freshState, type PersistedState } from './flyServer';
 import { loadState, saveState } from './stateStore';
 
@@ -26,7 +27,7 @@ log(`state: ${state.attempts} attempts, generation ${state.trainer.generation}, 
 
 let fly: FlyServer | undefined;
 const out = new Broadcaster({ hello: () => fly!.hello(), stats: () => fly!.stats() }, cfg.corsOrigin);
-state.watchers ??= {};
+state.watchers ??= {}; state.balances ??= {};
 fly = new FlyServer({
   brain, groups, state, lamportsPerAttempt: cfg.lamportsPerAttempt, feeSource: cfg.feeSource, feeWallets: cfg.feeWallets,
   save: (s) => saveState(cfg.stateFile, s), out
@@ -40,17 +41,18 @@ if (cfg.feeSource === 'mock') {
   const rpc = httpRpc(cfg.rpcUrl), stops: (() => void)[] = [];
   stopFees = () => stops.forEach((stop) => stop());
   for (const wallet of cfg.feeWallets) {
-    const watcher: SolanaFeeWatcher = new SolanaFeeWatcher(rpc, wallet, state.watchers[wallet] ?? null, (e) => {
-      log('fee', e.lamports / 1e9, 'SOL into', wallet, e.signature);
-      fly!.addFee(e, { wallet, cursor: watcher.cursor });
-    });
-    // the first poll may only record where the wallet history starts; persist that before watching
+    const position = () => (watcher instanceof BalanceFeeWatcher ? { balance: watcher.lastBalance } : { cursor: watcher.cursor });
+    const onFee = (e: FeeEvent) => { log('fee', e.lamports / 1e9, 'SOL into', wallet, e.signature); fly!.addFee(e, { wallet, ...position() }); };
+    const watcher: BalanceFeeWatcher | SolanaFeeWatcher = cfg.feeMode === 'balance'
+      ? new BalanceFeeWatcher(rpc, wallet, state.balances[wallet] ?? null, onFee)
+      : new SolanaFeeWatcher(rpc, wallet, state.watchers[wallet] ?? null, onFee);
+    // the first poll may only record a baseline; persist that before watching
     void watcher.poll()
-      .then(() => { fly!.setWatcherCursor(wallet, watcher.cursor); saveState(cfg.stateFile, fly!.snapshot()); })
+      .then(() => { fly!.setWatcher(wallet, position()); saveState(cfg.stateFile, fly!.snapshot()); })
       .catch((e) => log(`first fee poll of ${wallet} failed, retrying in the loop:`, e instanceof Error ? e.message : e))
       .finally(() => { stops.push(watcher.start(cfg.pollMs, (m) => log(m))); });
   }
-  log(`fees: watching ${cfg.feeWallets.join(', ')} via ${cfg.rpcUrl}`);
+  log(`fees: watching ${cfg.feeWallets.join(', ')} (${cfg.feeMode}, every ${cfg.pollMs} ms) via ${cfg.rpcUrl}`);
 }
 log(`1 attempt = ${cfg.lamportsPerAttempt / 1e9} SOL`);
 

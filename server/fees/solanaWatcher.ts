@@ -16,6 +16,17 @@ export function httpRpc(url: string): RpcClient {
   };
 }
 
+/** Run `poll` forever; errors back off up to a minute. Returns a stop function. */
+export function pollForever(poll: () => Promise<void>, intervalMs: number, log: (msg: string) => void) {
+  let stopped = false, delay = intervalMs, timer: ReturnType<typeof setTimeout> | undefined;
+  const loop = async () => {
+    try { await poll(); delay = intervalMs; } catch (e) { delay = Math.min(60_000, delay * 2); log(`fee watcher: ${e instanceof Error ? e.message : e}`); }
+    if (!stopped) timer = setTimeout(loop, delay);
+  };
+  void loop();
+  return () => { stopped = true; clearTimeout(timer); };
+}
+
 export interface FeeEvent { signature: string; lamports: number; slot: number; blockTime: number | null }
 /** `initialized` distinguishes "never looked" from "looked, wallet had no history". */
 export interface WatcherCursor { initialized: boolean; lastSignature: string | null }
@@ -38,6 +49,8 @@ export function inflowFromTx(tx: TxJson, wallet: string) {
 
 export class SolanaFeeWatcher {
   private state: WatcherCursor;
+  /** Highest transaction version we ask for; raised if the node reports a newer one. */
+  private txVersion = 1;
 
   constructor(private readonly rpc: RpcClient, private readonly wallet: string, cursor: WatcherCursor | null,
     private readonly onFee: (e: FeeEvent) => void, private readonly pageSize = 100) {
@@ -65,7 +78,7 @@ export class SolanaFeeWatcher {
     }
     for (const s of fresh.reverse()) {
       if (s.err) { this.state = { initialized: true, lastSignature: s.signature }; continue; }
-      const tx = await this.rpc.call<TxJson | null>('getTransaction', [s.signature, { encoding: 'json', commitment: 'confirmed', maxSupportedTransactionVersion: 0 }]);
+      const tx = await this.transaction(s.signature);
       if (!tx) return; // not served yet; retry from here next poll
       this.state = { initialized: true, lastSignature: s.signature };
       const lamports = inflowFromTx(tx, this.wallet);
@@ -73,14 +86,16 @@ export class SolanaFeeWatcher {
     }
   }
 
-  /** Poll forever; errors back off up to a minute. Returns a stop function. */
-  start(intervalMs: number, log: (msg: string) => void = console.error) {
-    let stopped = false, delay = intervalMs, timer: ReturnType<typeof setTimeout> | undefined;
-    const loop = async () => {
-      try { await this.poll(); delay = intervalMs; } catch (e) { delay = Math.min(60_000, delay * 2); log(`fee watcher: ${e instanceof Error ? e.message : e}`); }
-      if (!stopped) timer = setTimeout(loop, delay);
-    };
-    void loop();
-    return () => { stopped = true; clearTimeout(timer); };
+  private async transaction(signature: string): Promise<TxJson | null> {
+    const get = () => this.rpc.call<TxJson | null>('getTransaction', [signature, { encoding: 'json', commitment: 'confirmed', maxSupportedTransactionVersion: this.txVersion }]);
+    try { return await get(); } catch (e) {
+      // e.g. 'Transaction version (2) is not supported ... "maxSupportedTransactionVersion": 2'
+      const newer = Number(String(e instanceof Error ? e.message : e).match(/maxSupportedTransactionVersion"?:\s*(\d+)/)?.[1]);
+      if (!(newer > this.txVersion)) throw e;
+      this.txVersion = newer;
+      return get();
+    }
   }
+
+  start(intervalMs: number, log: (msg: string) => void = console.error) { return pollForever(() => this.poll(), intervalMs, log); }
 }

@@ -40,7 +40,8 @@ First server start calibrates the readout (~30 s) and writes `data/state.json`. 
 | `FEE_WALLET` | — | Address that receives the fees (pump.fun creator vault). Required for `solana` |
 | `SOLANA_RPC_URL` | public mainnet | Use a paid RPC (e.g. Helius) in production |
 | `SOL_PER_ATTEMPT` | `0.05` | Price of one attempt |
-| `POLL_MS` | `10000` | Fee wallet poll interval |
+| `FEE_MODE` | `balance` | `balance`: one `getBalance` per poll, any increase = fees (a claim resets the baseline). `transactions`: per-trade exact via `getTransaction`, needs a paid RPC when trading is busy |
+| `POLL_MS` | `5000` / `10000` | Poll interval (balance / transactions) |
 | `MOCK_FEE_EVERY_MS` | `4000` | Fake fee interval in mock mode |
 | `STATE_FILE` | `data/state.json` | Put this on a persistent volume |
 | `PORT` | `8787` | HTTP + WebSocket (`/ws`, `/health`, `/stats`) |

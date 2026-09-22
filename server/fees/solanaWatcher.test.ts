@@ -96,6 +96,24 @@ describe('SolanaFeeWatcher', () => {
     expect(fees.map((f) => f.lamports)).toEqual([3, 9]);
   });
 
+  it('asks for the newer transaction version the node reports instead of getting stuck', async () => {
+    const versions: number[] = [];
+    const rpc: RpcClient = {
+      async call(method, params) {
+        if (method === 'getSignaturesForAddress') return [{ signature: 'b', slot: 1, err: null, blockTime: 1 }] as never;
+        const v = (params[1] as { maxSupportedTransactionVersion: number }).maxSupportedTransactionVersion;
+        versions.push(v);
+        if (v < 2) throw new Error('getTransaction: Transaction version (2) is not supported by the requesting client. Please try the request again with the following configuration parameter: "maxSupportedTransactionVersion": 2');
+        return tx(0, 42) as never;
+      }
+    };
+    const fees: FeeEvent[] = [];
+    const w = new SolanaFeeWatcher(rpc, WALLET, { initialized: true, lastSignature: 'a' }, (e) => fees.push(e));
+    await w.poll();
+    expect(versions).toEqual([1, 2]);
+    expect(fees.map((f) => f.lamports)).toEqual([42]);
+  });
+
   it('exposes the updated cursor inside the fee callback so it can be persisted atomically', async () => {
     const chain = fakeChain([{ sig: 'a', tx: tx(0, 1) }]);
     const seen: (string | null)[] = [];

@@ -13,15 +13,17 @@ export interface PersistedState {
   version: 1; trainer: TrainerState; norm: Normalization;
   queue: number; pendingLamports: number; totalFeeLamports: number;
   attempts: number; bestScore: number; bestFitness: number;
-  watchers: Record<string, WatcherCursor>; history: AttemptRecord[];
+  watchers: Record<string, WatcherCursor>; balances: Record<string, number>; history: AttemptRecord[];
 }
 
 export function freshState(norm: Normalization): PersistedState {
   return {
     version: 1, trainer: initialTrainer([...Array(PARAM_COUNT - 1).fill(0), -0.35]), norm,
-    queue: 0, pendingLamports: 0, totalFeeLamports: 0, attempts: 0, bestScore: 0, bestFitness: 0, watchers: {}, history: []
+    queue: 0, pendingLamports: 0, totalFeeLamports: 0, attempts: 0, bestScore: 0, bestFitness: 0, watchers: {}, balances: {}, history: []
   };
 }
+
+export interface WatchPosition { cursor?: WatcherCursor; balance?: number | null }
 
 export interface Outbox { json(msg: ServerMessage): void; binary(bytes: Uint8Array): void }
 
@@ -80,13 +82,17 @@ export class FlyServer {
     return { ...this.state, queue: this.state.queue + (this.phase === 'flying' ? 1 : 0), pendingLamports: this.fees.pending };
   }
 
-  setWatcherCursor(wallet: string, cursor: WatcherCursor) { this.state.watchers[wallet] = cursor; }
+  /** Remember where a fee watcher is, so a restart neither recounts nor skips fees. */
+  setWatcher(wallet: string, at: WatchPosition) {
+    if (at.cursor) this.state.watchers[wallet] = at.cursor;
+    if (at.balance !== undefined && at.balance !== null) this.state.balances[wallet] = at.balance;
+  }
 
-  addFee(e: FeeEvent, from?: { wallet: string; cursor: WatcherCursor }) {
+  addFee(e: FeeEvent, from?: { wallet: string } & WatchPosition) {
     const added = this.fees.add(e.lamports);
     this.state.totalFeeLamports += Math.max(0, e.lamports);
     this.state.queue += added;
-    if (from) this.state.watchers[from.wallet] = from.cursor;
+    if (from) this.setWatcher(from.wallet, from);
     this.o.save(this.snapshot());
     this.o.out.json({ type: 'fee', lamports: e.lamports, signature: e.signature, attemptsAdded: added });
     this.o.out.json({ type: 'stats', stats: this.stats() });
