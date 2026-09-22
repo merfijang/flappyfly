@@ -136,7 +136,7 @@ export class SiteApp {
 
   private token() {
     const el = this.$('ca');
-    if (!TOKEN_CA) { el.textContent = 'Token launches on Solana soon'; return; }
+    if (!TOKEN_CA) return;
     el.innerHTML = `<button type="button" id="copy" title="Copy the contract address"><span class="addr">${TOKEN_CA.slice(0, 4)}…${TOKEN_CA.slice(-4)}</span> <span id="copyLabel">Copy address</span></button>`;
     this.$('copy').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(TOKEN_CA); this.$('copyLabel').textContent = 'Copied'; }
@@ -199,7 +199,7 @@ const TEMPLATE = `
     <div class="cols">
       <div>
         <h3>The brain is real</h3>
-        <p>The wiring is the FlyEM male CNS connectome: 166,700 neurons and 25 million connections traced from electron-microscope images of one fruit fly. It runs as leaky integrate-and-fire neurons, 50 steps a second, on our server. No connection is ever changed.</p>
+        <p>The wiring is the <a href="https://www.janelia.org/project-team/flyem" target="_blank" rel="noopener">FlyEM male CNS connectome</a> (CC BY 4.0): 166,700 neurons and 25 million connections traced from electron-microscope images of one fruit fly. It runs as leaky integrate-and-fire neurons, 50 steps a second, on our server. No connection is ever changed.</p>
       </div>
       <div>
         <h3>How it sees and flaps</h3>
@@ -212,7 +212,4 @@ const TEMPLATE = `
     </div>
     <p class="honest">This is an experiment, not a claim that a fly understands Flappy Bird. The way the game reaches the eyes and the way a flap is read out are designed interfaces. When it flies badly, you are watching it fly badly.</p>
   </section>
-</main>
-<footer class="foot">
-  <p>Connectome: FlyEM MaleCNS v1.0 (HHMI Janelia, Cambridge Connectomics Group, Google Research), CC BY 4.0. Browser export by fly.ai.</p>
-</footer>`;
+</main>`;

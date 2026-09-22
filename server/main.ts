@@ -35,8 +35,8 @@ fly = new FlyServer({
 
 let stopFees: () => void = () => undefined;
 if (cfg.feeSource === 'mock') {
-  stopFees = mockFees(cfg.mockFeeEveryMs, (e) => fly!.addFee(e));
-  log(`fees: MOCK, one fake inflow every ${cfg.mockFeeEveryMs} ms`);
+  stopFees = mockFees(cfg.mockFeeEveryMs, (e) => fly!.addFee(e), Math.random, cfg.mockTotalLamports);
+  log(`fees: MOCK, one fake inflow every ${cfg.mockFeeEveryMs} ms${Number.isFinite(cfg.mockTotalLamports) ? `, ${cfg.mockTotalLamports / 1e9} SOL in total` : ''}`);
 } else {
   const rpc = httpRpc(cfg.rpcUrl), stops: (() => void)[] = [];
   stopFees = () => stops.forEach((stop) => stop());

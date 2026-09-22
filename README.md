@@ -43,6 +43,7 @@ First server start calibrates the readout (~30 s) and writes `data/state.json`. 
 | `FEE_MODE` | `balance` | `balance`: one `getBalance` per poll, any increase = fees (a claim resets the baseline). `transactions`: per-trade exact via `getTransaction`, needs a paid RPC when trading is busy |
 | `POLL_MS` | `5000` / `10000` | Poll interval (balance / transactions) |
 | `MOCK_FEE_EVERY_MS` | `4000` | Fake fee interval in mock mode |
+| `MOCK_TOTAL_SOL` | unlimited | Stop fake fees after this much (dry runs) |
 | `STATE_FILE` | `data/state.json` | Put this on a persistent volume |
 | `PORT` | `8787` | HTTP + WebSocket (`/ws`, `/health`, `/stats`) |
 | `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` behind a reverse proxy) |

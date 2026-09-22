@@ -2,7 +2,7 @@ import { join } from 'node:path';
 
 export interface Config {
   port: number; host: string; feeMode: 'balance' | 'transactions'; feeSource: 'mock' | 'solana'; rpcUrl: string; feeWallets: string[]; lamportsPerAttempt: number;
-  mockFeeEveryMs: number; pollMs: number; stateFile: string; brainDir: string; corsOrigin: string;
+  mockFeeEveryMs: number; mockTotalLamports: number; pollMs: number; stateFile: string; brainDir: string; corsOrigin: string;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -19,7 +19,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
     port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', feeMode, feeSource, feeWallets, lamportsPerAttempt: Math.round(sol * 1e9),
     rpcUrl: env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com',
-    mockFeeEveryMs: Number(env.MOCK_FEE_EVERY_MS ?? 4000), pollMs: Number(env.POLL_MS ?? (feeMode === 'balance' ? 5000 : 10000)),
+    mockFeeEveryMs: Number(env.MOCK_FEE_EVERY_MS ?? 4000), mockTotalLamports: env.MOCK_TOTAL_SOL ? Math.round(Number(env.MOCK_TOTAL_SOL) * 1e9) : Infinity, pollMs: Number(env.POLL_MS ?? (feeMode === 'balance' ? 5000 : 10000)),
     stateFile: env.STATE_FILE ?? join(process.cwd(), 'data', 'state.json'),
     brainDir: env.BRAIN_DIR ?? join(process.cwd(), 'brain'),
     corsOrigin: env.CORS_ORIGIN ?? '*'

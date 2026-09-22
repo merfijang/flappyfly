@@ -20,7 +20,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; }
 figure { margin: 0; }
 [hidden] { display: none !important; }
 
-.top, main, .foot { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+.top, main { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
 
 .top { display: flex; align-items: center; gap: 24px; padding-top: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--rule); }
 .mark { font-family: var(--serif); font-size: 24px; font-style: italic; color: var(--ink); text-decoration: none; }
@@ -28,6 +28,7 @@ figure { margin: 0; }
 .pip { width: 8px; height: 8px; border-radius: 50%; background: #5b6474; }
 .pip.on { background: #6fdca6; box-shadow: 0 0 0 4px rgba(111, 220, 166, .12); }
 .ca { margin: 0 0 0 auto; color: var(--ink-2); font-size: 14px; }
+.ca:empty { display: none; }
 .ca button { font: inherit; color: var(--ink); background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
 .ca button:hover { border-color: var(--ink-2); }
 .addr { font-variant-numeric: tabular-nums; color: var(--sol); }
@@ -68,13 +69,12 @@ h2 { font-size: 30px; line-height: 1.15; }
 .feed li.gen { color: var(--neuron); }
 .feed:empty::before { content: "Fees and attempts will show up here as they happen."; color: var(--ink-2); }
 
-.how { padding: 44px 0 36px; }
+.how { padding: 44px 0 64px; }
 .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin-top: 22px; }
 h3 { font-size: 22px; margin-bottom: 8px; }
 .cols p { margin: 0; color: var(--ink-2); max-width: 34rem; }
 .honest { font-family: var(--serif); font-size: 19px; line-height: 1.55; margin: 34px 0 0; max-width: 46rem; }
 
-.foot { border-top: 1px solid var(--rule); padding-top: 20px; padding-bottom: 40px; color: var(--ink-2); font-size: 13px; }
 
 @media (max-width: 900px) {
   .stage { grid-template-columns: 1fr; }
@@ -84,7 +84,7 @@ h3 { font-size: 22px; margin-bottom: 8px; }
   .learning, .cols { grid-template-columns: 1fr; gap: 28px; }
 }
 @media (max-width: 520px) {
-  .top, main, .foot { padding: 0 16px; }
+  .top, main { padding: 0 16px; }
   .top { flex-wrap: wrap; gap: 8px 16px; padding-top: 14px; padding-bottom: 14px; }
   .ca { margin-left: 0; width: 100%; }
   .intro p { font-size: 18px; }
