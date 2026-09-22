@@ -11,7 +11,8 @@ import type { FeeEvent, WatcherCursor } from './fees/solanaWatcher';
 import { fitness, initialTrainer, Trainer, type Sample, type TrainerState } from './trainer';
 
 export interface PersistedState {
-  version: 1; trainer: TrainerState; readout: Readout;
+  /** 2: one game quantity per visual population, readout measured across the whole brain. */
+  version: 2; trainer: TrainerState; readout: Readout;
   queue: number; pendingLamports: number; totalFeeLamports: number;
   attempts: number; bestScore: number; bestFitness: number;
   watchers: Record<string, WatcherCursor>; balances: Record<string, number>; history: AttemptRecord[];
@@ -19,7 +20,7 @@ export interface PersistedState {
 
 export function freshState(readout: Readout): PersistedState {
   return {
-    version: 1, trainer: initialTrainer([...Array(paramCount(readout) - 1).fill(0), -0.35]), readout,
+    version: 2, trainer: initialTrainer([...Array(paramCount(readout) - 1).fill(0), -0.35]), readout,
     queue: 0, pendingLamports: 0, totalFeeLamports: 0, attempts: 0, bestScore: 0, bestFitness: 0, watchers: {}, balances: {}, history: []
   };
 }

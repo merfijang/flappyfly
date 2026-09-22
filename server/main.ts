@@ -17,8 +17,8 @@ log('loading connectome from', cfg.brainDir);
 const brain = loadBrain(cfg.brainDir), groups = buildGroups(brain.meta);
 log(`connectome ready: ${brain.n.toLocaleString()} neurons`);
 
-let state = loadState<PersistedState>(cfg.stateFile, () => ({ version: 1 }) as PersistedState);
-if (!state.trainer) {
+let state = loadState<PersistedState>(cfg.stateFile, () => ({ version: 2 }) as PersistedState);
+if (!state.trainer || !state.readout) {
   log('first start: measuring which neurons to read the flap from (~1 min)');
   const readout = calibrateReadout(brain, groups, brain.meta, { keep: cfg.readoutSize });
   log(`readout: ${readout.names.length} groups, strongest ${readout.names.slice(0, 5).join(', ')}`);
