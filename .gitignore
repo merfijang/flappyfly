@@ -30,3 +30,6 @@ desktop.ini
 *.temp
 *.swp
 *.swo
+
+# server state
+data/

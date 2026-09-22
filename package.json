@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "server": "tsx server/main.ts",
+    "typecheck": "tsc -b && tsc -p tsconfig.server.json"
   },
   "devDependencies": {
     "@types/node": "^24.13.6",
