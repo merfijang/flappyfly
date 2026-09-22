@@ -124,6 +124,27 @@ describe('SolanaFeeWatcher', () => {
   });
 });
 
+describe('unknown cursor', () => {
+  it('re-anchors when the node does not know the signature we count from', async () => {
+    let calls = 0;
+    const rpc: RpcClient = {
+      async call(method, params) {
+        if (method !== 'getSignaturesForAddress') throw new Error(method);
+        const o = (params as [string, { until?: string }])[1];
+        calls++;
+        if (o.until) throw new Error('getSignaturesForAddress: Transaction 4GY2 not found');
+        return [{ signature: 'fresh', slot: 1, err: null, blockTime: 1 }] as never;
+      }
+    };
+    const w = new SolanaFeeWatcher(rpc, WALLET, { initialized: true, lastSignature: 'gone' }, () => undefined);
+    await w.poll();
+    expect(w.cursor).toEqual({ initialized: false, lastSignature: null });
+    await w.poll();
+    expect(w.cursor).toEqual({ initialized: true, lastSignature: 'fresh' });
+    expect(calls).toBe(2);
+  });
+});
+
 describe('counting one coin', () => {
   const withMint = (mint: string | null) => ({
     slot: 1, blockTime: 1,

@@ -85,8 +85,17 @@ export class SolanaFeeWatcher {
 
   get cursor(): WatcherCursor { return { ...this.state }; }
 
-  private signatures(opts: { limit: number; until?: string; before?: string }) {
-    return this.rpc.call<SignatureInfo[]>('getSignaturesForAddress', [this.source, { ...opts, commitment: 'confirmed' }]);
+  private async signatures(opts: { limit: number; until?: string; before?: string }) {
+    try {
+      return await this.rpc.call<SignatureInfo[]>('getSignaturesForAddress', [this.source, { ...opts, commitment: 'confirmed' }]);
+    } catch (e) {
+      // public RPC is a pool of nodes: one of them may not know the signature we count from
+      if (opts.until && /not found/i.test(String(e instanceof Error ? e.message : e))) {
+        this.state = { initialized: false, lastSignature: null };
+        return [];
+      }
+      throw e;
+    }
   }
 
   async poll() {
