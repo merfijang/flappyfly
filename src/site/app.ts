@@ -238,7 +238,7 @@ const TEMPLATE = `
       </div>
       <div>
         <h3>How trading teaches it</h3>
-        <p>Every <span id="price">0.05</span> SOL of fees buys one attempt. Each attempt flies with a slightly changed readout of those descending neurons. After ten attempts the fly keeps what went further. Sixty-five numbers learn; nothing about the flight is scripted.</p>
+        <p>Every <span id="price">0.05</span> SOL of fees buys one attempt. Each attempt flies with a slightly changed readout of those populations. After ten attempts the fly keeps what went further. Sixty-five numbers learn; nothing about the flight is scripted.</p>
       </div>
     </div>
     <p class="honest">This is an experiment, not a claim that a fly understands Flappy Bird. The way the game reaches the eyes and the way a flap is read out are designed interfaces. When it flies badly, you are watching it fly badly.</p>

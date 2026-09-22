@@ -128,8 +128,8 @@ export class Specimen {
       // central chatter twinkles faintly and shines where a region is excited; the periphery twinkles with its own spikes
       const shine = role ? h : PERIPHERAL.has(name) ? h * 0.75 : h * (0.3 + 0.7 * this.glow[reg]);
       c.fillStyle = role === ROLE.input ? ROLE_COLORS.input : role === ROLE.readout ? ROLE_COLORS.readout : shine > 0.45 ? '#f4fbff' : REGION_COLORS[reg];
-      c.globalAlpha = Math.min(1, (role ? 0.45 : 0.2) + near * 0.25 + shine * 0.75);
-      const s = ((role ? 1.5 : 0.8) + near * 0.5 + shine * 1.3) * dpr;
+      c.globalAlpha = Math.min(1, (role ? 0.3 : 0.2) + near * 0.25 + shine * 0.8);
+      const s = ((role ? 1.05 : 0.8) + near * 0.5 + shine * 1.4) * dpr;
       c.fillRect(X() - s / 2, Y() - s / 2, s, s);
       if (this.heat[k] > 0) this.heat[k] = this.heat[k] < 0.03 ? 0 : this.heat[k] * 0.84;
     }
