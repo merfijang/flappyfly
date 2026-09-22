@@ -91,6 +91,9 @@ export class Connectome {
     return fired.subarray(0, count);
   }
 
+  /** Neurons that fired in the most recent step. */
+  lastFired(): Int32Array { return this.fired.subarray(0, this.firedCount); }
+
   /** Fraction of a group that fired this step, saturating at 30% (same scale as the worker). */
   rate(ids: Int32Array | undefined) {
     if (!ids) return 0;
