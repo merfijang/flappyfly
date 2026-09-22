@@ -13,13 +13,13 @@ export interface PersistedState {
   version: 1; trainer: TrainerState; norm: Normalization;
   queue: number; pendingLamports: number; totalFeeLamports: number;
   attempts: number; bestScore: number; bestFitness: number;
-  watcher: WatcherCursor | null; history: AttemptRecord[];
+  watchers: Record<string, WatcherCursor>; history: AttemptRecord[];
 }
 
 export function freshState(norm: Normalization): PersistedState {
   return {
     version: 1, trainer: initialTrainer([...Array(PARAM_COUNT - 1).fill(0), -0.35]), norm,
-    queue: 0, pendingLamports: 0, totalFeeLamports: 0, attempts: 0, bestScore: 0, bestFitness: 0, watcher: null, history: []
+    queue: 0, pendingLamports: 0, totalFeeLamports: 0, attempts: 0, bestScore: 0, bestFitness: 0, watchers: {}, history: []
   };
 }
 
@@ -27,7 +27,7 @@ export interface Outbox { json(msg: ServerMessage): void; binary(bytes: Uint8Arr
 
 export interface FlyServerOptions {
   brain: Connectome; groups: SensoryGroups; state: PersistedState; lamportsPerAttempt: number;
-  feeSource: Stats['feeSource']; feeWallet: string | null;
+  feeSource: Stats['feeSource']; feeWallets: string[];
   save: (s: PersistedState) => void; out: Outbox;
   rand?: () => number; capSeconds?: number; pauseTicks?: number; historyLimit?: number;
 }
@@ -67,7 +67,7 @@ export class FlyServer {
     return {
       attempts: s.attempts, generation: s.trainer.generation, queue: s.queue, bestScore: s.bestScore, bestFitness: s.bestFitness,
       totalFeeLamports: s.totalFeeLamports, pendingLamports: this.fees.pending, lamportsPerAttempt: this.o.lamportsPerAttempt,
-      feeSource: this.o.feeSource, feeWallet: this.o.feeWallet, flying: this.phase === 'flying'
+      feeSource: this.o.feeSource, feeWallets: this.o.feeWallets, flying: this.phase === 'flying'
     };
   }
 
@@ -80,13 +80,13 @@ export class FlyServer {
     return { ...this.state, queue: this.state.queue + (this.phase === 'flying' ? 1 : 0), pendingLamports: this.fees.pending };
   }
 
-  setWatcherCursor(cursor: WatcherCursor) { this.state.watcher = cursor; }
+  setWatcherCursor(wallet: string, cursor: WatcherCursor) { this.state.watchers[wallet] = cursor; }
 
-  addFee(e: FeeEvent, cursor?: WatcherCursor) {
+  addFee(e: FeeEvent, from?: { wallet: string; cursor: WatcherCursor }) {
     const added = this.fees.add(e.lamports);
     this.state.totalFeeLamports += Math.max(0, e.lamports);
     this.state.queue += added;
-    if (cursor) this.state.watcher = cursor;
+    if (from) this.state.watchers[from.wallet] = from.cursor;
     this.o.save(this.snapshot());
     this.o.out.json({ type: 'fee', lamports: e.lamports, signature: e.signature, attemptsAdded: added });
     this.o.out.json({ type: 'stats', stats: this.stats() });

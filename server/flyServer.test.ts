@@ -10,7 +10,7 @@ function setup(extra: Partial<ConstructorParameters<typeof FlyServer>[0]> = {}) 
   const brain = tinyBrain(), msgs: ServerMessage[] = [], bins: Uint8Array[] = [], saves: PersistedState[] = [];
   let r = 5; const rand = () => (r = (Math.imul(r, 1664525) + 1013904223) >>> 0) / 4294967296;
   const fly = new FlyServer({
-    brain, groups: buildGroups(brain.meta), state: freshState(norm), lamportsPerAttempt: 100, feeSource: 'mock', feeWallet: null,
+    brain, groups: buildGroups(brain.meta), state: freshState(norm), lamportsPerAttempt: 100, feeSource: 'mock', feeWallets: [],
     save: (s) => saves.push(structuredClone(s)), out: { json: (m) => msgs.push(m), binary: (b) => bins.push(b) }, rand, ...extra
   });
   const of = <T extends ServerMessage['type']>(t: T) => msgs.filter((m): m is Extract<ServerMessage, { type: T }> => m.type === t);
@@ -42,6 +42,13 @@ describe('FlyServer', () => {
     expect(fly.stats()).toMatchObject({ attempts: 1, queue: 0, flying: false });
     fly.tick(); fly.tick(); fly.tick();
     expect(of('attempt_start')).toHaveLength(1); // queue empty → stays idle
+  });
+
+  it('persists the cursor of each watched wallet together with its fee', () => {
+    const { fly, saves } = setup();
+    fly.addFee(fee(100), { wallet: 'VaultA', cursor: { initialized: true, lastSignature: 'sigA' } });
+    fly.addFee(fee(100), { wallet: 'VaultB', cursor: { initialized: true, lastSignature: 'sigB' } });
+    expect(saves.at(-1)!.watchers).toEqual({ VaultA: { initialized: true, lastSignature: 'sigA' }, VaultB: { initialized: true, lastSignature: 'sigB' } });
   });
 
   it('counts an attempt in flight as still queued when saving', () => {

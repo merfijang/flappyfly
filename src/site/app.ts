@@ -97,7 +97,18 @@ export class SiteApp {
     this.$('fBest').textContent = pipes(s.bestScore);
     this.$('fFees').textContent = `${sol(s.totalFeeLamports, 3)} SOL`;
     this.$('price').textContent = sol(s.lamportsPerAttempt);
-    this.$('source').textContent = s.feeSource === 'mock' ? 'Demo mode: fees are simulated until the token launches.' : '';
+    const src = this.$('source');
+    if (s.feeSource === 'mock') src.textContent = 'Demo mode: fees are simulated until the token launches.';
+    else {
+      src.textContent = 'Fees are read live from the creator fee vaults on Solana: ';
+      s.feeWallets.forEach((w, i) => {
+        const a = document.createElement('a');
+        a.href = `https://solscan.io/account/${w}`; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = `${w.slice(0, 4)}…${w.slice(-4)}`;
+        src.append(...(i ? [', ', a] : [a]));
+      });
+      src.append('.');
+    }
     this.overlay();
   }
 

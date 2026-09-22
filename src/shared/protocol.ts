@@ -6,7 +6,7 @@ export interface AttemptRecord { n: number; generation: number; score: number; f
 export interface Stats {
   attempts: number; generation: number; queue: number; bestScore: number; bestFitness: number;
   totalFeeLamports: number; pendingLamports: number; lamportsPerAttempt: number;
-  feeSource: 'mock' | 'solana'; feeWallet: string | null; flying: boolean;
+  feeSource: 'mock' | 'solana'; feeWallets: string[]; flying: boolean;
 }
 
 export interface AttemptStart { type: 'attempt_start'; n: number; generation: number; sample: number; pop: number; seed: number }

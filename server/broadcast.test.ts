@@ -16,7 +16,7 @@ describe('server over WebSocket', () => {
     const out = new Broadcaster({ hello: () => fly!.hello(), stats: () => fly!.stats() });
     fly = new FlyServer({
       brain, groups: buildGroups(brain.meta), state: freshState({ mean: FEATURES.map(() => 0), std: FEATURES.map(() => 1) }),
-      lamportsPerAttempt: 100, feeSource: 'mock', feeWallet: null, save: () => undefined, out
+      lamportsPerAttempt: 100, feeSource: 'mock', feeWallets: [], save: () => undefined, out
     });
     const port = await out.listen(0);
     cleanup = () => out.close();
