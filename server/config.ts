@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 export interface Config {
-  port: number; host: string; feeMint: string | null; gameSpeed: number; course: { gap: number; spawnEvery: number; speed: number }; readoutSize: number; feeMode: 'balance' | 'transactions'; feeSource: 'mock' | 'solana'; rpcUrl: string; feeWallets: string[]; lamportsPerAttempt: number;
+  port: number; host: string; feeMint: string | null; feeToken: string | null; gameSpeed: number; course: { gap: number; spawnEvery: number; speed: number }; readoutSize: number; feeMode: 'balance' | 'transactions'; feeSource: 'mock' | 'solana'; rpcUrl: string; feeWallets: string[]; lamportsPerAttempt: number;
   mockFeeEveryMs: number; mockTotalLamports: number; pollMs: number; stateFile: string; brainDir: string; corsOrigin: string;
 }
 
@@ -10,15 +10,17 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (feeSource !== 'mock' && feeSource !== 'solana') throw new Error(`FEE_SOURCE must be mock or solana, got ${feeSource}`);
   // comma-separated: e.g. the pump.fun bonding-curve creator vault and the PumpSwap creator vault
   const feeWallets = (env.FEE_WALLET ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  if (feeSource === 'solana' && !feeWallets.length) throw new Error('FEE_SOURCE=solana needs FEE_WALLET (the address or addresses that receive the fees)');
+  // FEE_TOKEN finds the wallets itself (see pumpToken.ts), so only one of the two is needed
+  if (feeSource === 'solana' && !feeWallets.length && !env.FEE_TOKEN?.trim()) throw new Error('FEE_SOURCE=solana needs FEE_TOKEN (a pump.fun coin) or FEE_WALLET (the address that receives the fees)');
   // balance: 1 getBalance per poll (cheap, default). transactions: per-trade exact, needs a paid RPC under load.
-  const feeMode = (env.FEE_MODE ?? (env.FEE_MINT?.trim() ? 'transactions' : 'balance')) as Config['feeMode'];
-  if (env.FEE_MINT?.trim() && feeMode !== 'transactions') throw new Error('FEE_MINT needs FEE_MODE=transactions: a balance poll cannot tell which coin paid');
+  const oneCoin = (env.FEE_MINT ?? env.FEE_TOKEN ?? '').trim();
+  const feeMode = (env.FEE_MODE ?? (oneCoin ? 'transactions' : 'balance')) as Config['feeMode'];
+  if (oneCoin && feeMode !== 'transactions') throw new Error('counting one coin needs FEE_MODE=transactions: a balance poll cannot tell which coin paid');
   if (feeMode !== 'balance' && feeMode !== 'transactions') throw new Error(`FEE_MODE must be balance or transactions, got ${feeMode}`);
   const sol = Number(env.SOL_PER_ATTEMPT ?? 0.05);
   if (!(sol > 0)) throw new Error('SOL_PER_ATTEMPT must be a positive number');
   return {
-    port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', feeMint: env.FEE_MINT?.trim() || null,
+    port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', feeMint: env.FEE_MINT?.trim() || env.FEE_TOKEN?.trim() || null, feeToken: env.FEE_TOKEN?.trim() || null,
     gameSpeed: Number(env.GAME_SPEED ?? 1),
     course: { gap: Number(env.COURSE_GAP ?? 210), spawnEvery: Number(env.COURSE_SPAWN ?? 2.1), speed: Number(env.COURSE_PIPE_SPEED ?? 132) },
     readoutSize: Number(env.READOUT_SIZE ?? 64), feeMode, feeSource, feeWallets, lamportsPerAttempt: Math.round(sol * 1e9),

@@ -7,6 +7,7 @@ import { readConfig } from './config';
 import { mockFees } from './fees/mockSource';
 import { BalanceFeeWatcher } from './fees/balanceWatcher';
 import { httpRpc, SolanaFeeWatcher, type FeeEvent } from './fees/solanaWatcher';
+import { resolvePumpCoin } from './fees/pumpToken';
 import { FlyServer, freshState, type PersistedState } from './flyServer';
 import { loadState, saveState } from './stateStore';
 
@@ -41,6 +42,12 @@ if (cfg.feeSource === 'mock') {
   log(`fees: MOCK, one fake inflow every ${cfg.mockFeeEveryMs} ms${Number.isFinite(cfg.mockTotalLamports) ? `, ${cfg.mockTotalLamports / 1e9} SOL in total` : ''}`);
 } else {
   const rpc = httpRpc(cfg.rpcUrl), stops: (() => void)[] = [];
+  if (cfg.feeToken) {
+    const coin = await resolvePumpCoin(rpc, cfg.feeToken);
+    cfg.feeWallets = coin.vaults;
+    log(`coin ${coin.mint}: creator ${coin.creator}, ${coin.migrated ? 'trading on PumpSwap' : 'still on the bonding curve'}`);
+    log(`fee vaults: ${coin.vaults.join(', ')}`);
+  }
   stopFees = () => stops.forEach((stop) => stop());
   // one coin: walk that coin trades once and credit every vault it paid. Otherwise: one watcher per vault.
   const groups: string[][] = cfg.feeMint ? [cfg.feeWallets] : cfg.feeWallets.map((w) => [w]);

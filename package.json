@@ -20,6 +20,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@solana/web3.js": "^1.99.0",
     "ws": "^8.21.3"
   }
 }
