@@ -30,6 +30,14 @@ npm run server      # fly server on :8787, fake fees (FEE_SOURCE=mock)
 npm run dev         # site on :5173, connects to ws://localhost:8787/ws
 ```
 
+To let a real coin pay for the attempts, give the server the coin and nothing else:
+
+```bash
+FEE_SOURCE=solana FEE_TOKEN=<pump.fun coin> SOL_PER_ATTEMPT=0.001 npm run server
+```
+
+It reads the coin’s bonding curve for the creator, derives both fee vaults, and watches them every few seconds — the busiest coin costs the same as the quietest. Use a paid RPC (`SOLANA_RPC_URL`) in production; the public one is fine for a quiet coin.
+
 First server start calibrates the readout (~30 s) and writes `data/state.json`. Restarts resume learning; an attempt interrupted by a crash is flown again.
 
 ## Server env

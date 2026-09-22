@@ -261,12 +261,11 @@ npm run dev      <span class="c"># the site, on :5173</span></code></pre>
       </li>
       <li>
         <h3>Let a token pay for the attempts</h3>
-        <p>Fees are read straight from Solana. Point the server at the vaults your token&rsquo;s fees land in &mdash; for a pump.fun coin, both of them come from the creator wallet.</p>
-        <pre><code>node scripts/pump-vaults.mjs &lt;creator wallet&gt;
-
-FEE_SOURCE=solana \\
-FEE_WALLET=&lt;bonding curve vault&gt;,&lt;PumpSwap vault&gt; \\
+        <p>Fees are read straight from Solana. Give the server a pump.fun coin and it works out the rest itself: the coin&rsquo;s creator, and the two vaults its fees land in &mdash; one for the bonding curve, one for PumpSwap after it migrates.</p>
+        <pre><code>FEE_SOURCE=solana \\
+FEE_TOKEN=&lt;your coin address&gt; \\
 SOL_PER_ATTEMPT=0.001 npm run server</code></pre>
+        <p>It reads those vaults every few seconds, so the busiest coin costs the same as the quietest. A coin that did not come from pump.fun works too: put the address its fees are paid to in <code>FEE_WALLET</code>.</p>
       </li>
       <li>
         <h3>Put it in public</h3>
