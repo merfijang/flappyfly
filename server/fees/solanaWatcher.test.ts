@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inflowFromTx, SolanaFeeWatcher, type FeeEvent, type RpcClient, type WatcherCursor } from './solanaWatcher';
+import { inflowFromTx, SolanaFeeWatcher, touchesMint, type FeeEvent, type RpcClient, type WatcherCursor } from './solanaWatcher';
 
 const WALLET = 'Vault111';
 
@@ -121,5 +121,30 @@ describe('SolanaFeeWatcher', () => {
     chain.entries.push({ sig: 'b', tx: tx(0, 5) });
     await w.poll();
     expect(seen).toEqual(['b']);
+  });
+});
+
+describe('counting one coin', () => {
+  const withMint = (mint: string | null) => ({
+    slot: 1, blockTime: 1,
+    meta: { err: null, preBalances: [5, 100], postBalances: [4, 160], loadedAddresses: { writable: [], readonly: [] },
+      postTokenBalances: mint ? [{ accountIndex: 3, mint }] : [] },
+    transaction: { message: { accountKeys: ['Payer', WALLET] } }
+  });
+
+  it('knows whether a transaction traded the mint', () => {
+    expect(touchesMint(withMint('Coin111') as never, 'Coin111')).toBe(true);
+    expect(touchesMint(withMint('Other22') as never, 'Coin111')).toBe(false);
+    expect(touchesMint(withMint(null) as never, 'Coin111')).toBe(false);
+  });
+
+  it('skips fees that came from the creator other coins', async () => {
+    const entries = [{ sig: 'a', tx: tx(0, 1) }, { sig: 'mine', tx: withMint('Coin111') as never }, { sig: 'theirs', tx: withMint('Other22') as never }];
+    const chain = fakeChain([entries[0]]);
+    const fees: FeeEvent[] = [];
+    const w = new SolanaFeeWatcher(chain.rpc, WALLET, { initialized: true, lastSignature: 'a' }, (e) => fees.push(e), 100, 'Coin111');
+    chain.entries.push(entries[1], entries[2]);
+    await w.poll();
+    expect(fees.map((f) => f.signature)).toEqual(['mine']);
   });
 });

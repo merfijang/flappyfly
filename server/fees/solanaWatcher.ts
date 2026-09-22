@@ -32,10 +32,21 @@ export interface FeeEvent { signature: string; lamports: number; slot: number; b
 export interface WatcherCursor { initialized: boolean; lastSignature: string | null }
 
 interface SignatureInfo { signature: string; slot: number; err: unknown; blockTime: number | null }
+interface TokenBalance { accountIndex: number; mint: string }
 interface TxJson {
   slot: number; blockTime: number | null;
-  meta: { err: unknown; preBalances: number[]; postBalances: number[]; loadedAddresses?: { writable: string[]; readonly: string[] } } | null;
+  meta: {
+    err: unknown; preBalances: number[]; postBalances: number[];
+    preTokenBalances?: TokenBalance[]; postTokenBalances?: TokenBalance[];
+    loadedAddresses?: { writable: string[]; readonly: string[] };
+  } | null;
   transaction: { message: { accountKeys: string[] } };
+}
+
+/** True if this transaction traded the given mint (used to count one coin, not a creator whole portfolio). */
+export function touchesMint(tx: TxJson, mint: string) {
+  if ([...tx.transaction.message.accountKeys, ...(tx.meta?.loadedAddresses?.writable ?? []), ...(tx.meta?.loadedAddresses?.readonly ?? [])].includes(mint)) return true;
+  return [...(tx.meta?.preTokenBalances ?? []), ...(tx.meta?.postTokenBalances ?? [])].some((b) => b.mint === mint);
 }
 
 /** Lamports the wallet gained in this transaction (0 for outflows, failures, or if absent). */
@@ -53,7 +64,9 @@ export class SolanaFeeWatcher {
   private txVersion = 1;
 
   constructor(private readonly rpc: RpcClient, private readonly wallet: string, cursor: WatcherCursor | null,
-    private readonly onFee: (e: FeeEvent) => void, private readonly pageSize = 100) {
+    private readonly onFee: (e: FeeEvent) => void, private readonly pageSize = 100,
+    /** Count only fees that came from trading this mint. */
+    private readonly mint: string | null = null) {
     this.state = cursor ?? { initialized: false, lastSignature: null };
   }
 
@@ -81,6 +94,7 @@ export class SolanaFeeWatcher {
       const tx = await this.transaction(s.signature);
       if (!tx) return; // not served yet; retry from here next poll
       this.state = { initialized: true, lastSignature: s.signature };
+      if (this.mint && !touchesMint(tx, this.mint)) continue;
       const lamports = inflowFromTx(tx, this.wallet);
       if (lamports > 0) this.onFee({ signature: s.signature, lamports, slot: tx.slot, blockTime: tx.blockTime });
     }

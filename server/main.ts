@@ -47,14 +47,14 @@ if (cfg.feeSource === 'mock') {
     const onFee = (e: FeeEvent) => { log('fee', e.lamports / 1e9, 'SOL into', wallet, e.signature); fly!.addFee(e, { wallet, ...position() }); };
     const watcher: BalanceFeeWatcher | SolanaFeeWatcher = cfg.feeMode === 'balance'
       ? new BalanceFeeWatcher(rpc, wallet, state.balances[wallet] ?? null, onFee)
-      : new SolanaFeeWatcher(rpc, wallet, state.watchers[wallet] ?? null, onFee);
+      : new SolanaFeeWatcher(rpc, wallet, state.watchers[wallet] ?? null, onFee, 100, cfg.feeMint);
     // the first poll may only record a baseline; persist that before watching
     void watcher.poll()
       .then(() => { fly!.setWatcher(wallet, position()); saveState(cfg.stateFile, fly!.snapshot()); })
       .catch((e) => log(`first fee poll of ${wallet} failed, retrying in the loop:`, e instanceof Error ? e.message : e))
       .finally(() => { stops.push(watcher.start(cfg.pollMs, (m) => log(m))); });
   }
-  log(`fees: watching ${cfg.feeWallets.join(', ')} (${cfg.feeMode}, every ${cfg.pollMs} ms) via ${cfg.rpcUrl}`);
+  log(`fees: watching ${cfg.feeWallets.join(', ')} (${cfg.feeMode}, every ${cfg.pollMs} ms${cfg.feeMint ? `, only trades of ${cfg.feeMint}` : ''}) via ${cfg.rpcUrl}`);
 }
 log(`1 attempt = ${cfg.lamportsPerAttempt / 1e9} SOL`);
 
