@@ -47,18 +47,39 @@ export function neuronPoint(region: number, role: number, r: () => number): Vec 
     case 'neck': { const t = r(); return [0.35 - t * 0.12, 0.005 - t * 0.035 + gauss(r) * 0.012, gauss(r) * 0.016]; }
     case 'vnc': return inEllipsoid(r, [NEUROMERES[Math.floor(r() * 3)], -0.045, 0], [0.045, 0.032, 0.05]);
     case 'abdominal': { const t = r(); return [-0.02 - t * 0.09, -0.045 + gauss(r) * 0.012, gauss(r) * (0.022 * (1 - t) + 0.006)]; }
-    default: return legPath(Math.floor(r() * 6), r(), r); // motor neurons, drawn along their leg nerves
+    case 'motor': return legPath(Math.floor(r() * 6), r(), r); // motor neurons, drawn along their leg nerves
+    // sensory neurons live in the periphery, where they sense
+    case 'retinaL': return inEllipsoid(r, EYE(1), [0.1, 0.13, 0.09], 0.12); // photoreceptors in the compound eye
+    case 'retinaR': return inEllipsoid(r, EYE(-1), [0.1, 0.13, 0.09], 0.12);
+    case 'headSense': return r() < 0.35 ? antennaPoint(r) : inEllipsoid(r, [0.43, 0.03, 0], [0.15, 0.15, 0.13], 0.1);
+    case 'bodySense': return surfacePoint(r);
+    case 'wingL': return wingPoint(1, r);
+    case 'wingR': return wingPoint(-1, r);
+    default: { const p = inEllipsoid(r, [-0.37, 0, 0], [0.24, 0.1, 0.09]); p[1] -= (p[0] + 0.37) ** 2 * 0.25; return p; } // gut (enteric neurons)
   }
+}
+
+const EYE = (side: 1 | -1): Vec => [0.47, 0.06, side * 0.15];
+
+function antennaPoint(r: () => number): Vec {
+  const side = r() < 0.5 ? 1 : -1, t = r();
+  return [0.56 + t * 0.06, 0.07 + t * 0.03 + gauss(r) * 0.008, side * (0.035 + t * 0.02) + gauss(r) * 0.006];
+}
+
+/** A point on the thorax, abdomen or legs: where bristle and leg sensory neurons sit. */
+function surfacePoint(r: () => number): Vec {
+  const pick = r();
+  if (pick < 0.35) return inEllipsoid(r, [0.1, 0.03, 0], [0.22, 0.2, 0.18], 0.06);
+  if (pick < 0.8) { const p = inEllipsoid(r, [-0.37, 0, 0], [0.36, 0.19, 0.18], 0.06); p[1] -= (p[0] + 0.37) ** 2 * 0.25; return p; }
+  return legPath(Math.floor(r() * 6), 0.25 + r() * 0.75, r);
 }
 
 /** Faint outline of the body the nervous system lives in (not neurons). */
 export function bodyPoint(r: () => number): Vec {
   const pick = r();
   if (pick < 0.16) return inEllipsoid(r, [0.43, 0.03, 0], [0.15, 0.15, 0.13], 0.08);
-  if (pick < 0.3) return inEllipsoid(r, [0.47, 0.06, r() < 0.5 ? 0.15 : -0.15], [0.1, 0.13, 0.09], 0.1);
-  if (pick < 0.55) return inEllipsoid(r, [0.1, 0.03, 0], [0.22, 0.2, 0.18], 0.06);
-  if (pick < 0.88) { const p = inEllipsoid(r, [-0.37, 0, 0], [0.36, 0.19, 0.18], 0.06); p[1] -= (p[0] + 0.37) ** 2 * 0.25; return p; }
-  return legPath(Math.floor(r() * 6), 0.25 + r() * 0.75, r);
+  if (pick < 0.3) return inEllipsoid(r, EYE(r() < 0.5 ? 1 : -1), [0.1, 0.13, 0.09], 0.1);
+  return surfacePoint(r);
 }
 
 /** Wing membrane points; `side` 1 = left wing. Resting pose, folded back over the body. */

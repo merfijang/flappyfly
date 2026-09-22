@@ -3,23 +3,33 @@
 import type { NeuronMeta } from '../core/connectome';
 import { buildGroups } from '../core/sensing';
 
-/** Parts of the nervous system, in the order the site colours them. */
-export const REGIONS = ['opticL', 'opticR', 'brain', 'neck', 'vnc', 'abdominal', 'motor'] as const;
-export const REGION_QUOTA = [1800, 1800, 3000, 900, 4200, 900, 700];
-const [OPTIC_L, OPTIC_R, BRAIN, NECK, VNC, ABDOMINAL, MOTOR] = REGIONS.map((_, i) => i);
+/**
+ * Parts of the nervous system, in the order the site colours them. Central neurons sit in the
+ * brain and nerve cord; sensory neurons sit where they sense (eyes, head, body wall, wings).
+ */
+export const REGIONS = ['opticL', 'opticR', 'brain', 'neck', 'vnc', 'abdominal', 'motor', 'retinaL', 'retinaR', 'headSense', 'bodySense', 'wingL', 'wingR', 'gut'] as const;
+export const REGION_QUOTA = [1500, 1500, 2600, 900, 3300, 700, 700, 800, 800, 600, 2200, 800, 800, 50];
+const R = Object.fromEntries(REGIONS.map((name, i) => [name, i])) as Record<(typeof REGIONS)[number], number>;
 
 /** What a displayed neuron does in this experiment. */
 export const ROLE = { none: 0, input: 1, readout: 2 } as const;
 
+const bySide = (side: number, index: number, left: number, right: number) => (side === 2 || (side === 0 && index & 1) ? right : left);
+
 /** Nervous-system region for a neuron's superclass. */
 export function regionOf(superclass: string, side: number, index: number) {
-  if (superclass.startsWith('ol_') || superclass.startsWith('visual_')) return side === 2 || (side === 0 && index & 1) ? OPTIC_R : OPTIC_L;
-  if (superclass.startsWith('cb_')) return BRAIN;
-  if (superclass.includes('descending') || superclass.includes('ascending')) return NECK;
-  if (superclass === 'vnc_motor') return MOTOR;
-  if (superclass === 'ENS' || superclass === 'vnc_endocrine') return ABDOMINAL;
-  if (superclass.startsWith('vnc_')) return index % 5 === 0 ? ABDOMINAL : VNC; // abdominal neuromeres sit at the back of the VNC
-  return BRAIN;
+  if (superclass === 'ol_sensory') return bySide(side, index, R.retinaL, R.retinaR); // photoreceptors
+  if (superclass.startsWith('ol_') || superclass.startsWith('visual_')) return bySide(side, index, R.opticL, R.opticR);
+  if (superclass.startsWith('cb_sensory')) return R.headSense;
+  if (superclass.startsWith('vnc_sensory') || superclass.startsWith('sensory_ascending')) {
+    return index % 3 === 0 ? bySide(side, index, R.wingL, R.wingR) : R.bodySense; // wing sensilla vs. bristles and legs
+  }
+  if (superclass.startsWith('cb_')) return R.brain;
+  if (superclass.includes('descending') || superclass.includes('ascending')) return R.neck;
+  if (superclass === 'vnc_motor') return R.motor;
+  if (superclass === 'ENS') return R.gut;
+  if (superclass.startsWith('vnc_')) return index % 5 === 0 ? R.abdominal : R.vnc; // abdominal neuromeres sit at the back of the VNC
+  return R.brain;
 }
 
 /**

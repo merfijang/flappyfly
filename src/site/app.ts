@@ -148,7 +148,7 @@ export class SiteApp {
 
 const LEGEND = [
   [REGION_COLORS[0], 'Optic lobes'], [REGION_COLORS[2], 'Central brain'], [REGION_COLORS[3], 'Neck connective'],
-  [REGION_COLORS[4], 'Nerve cord'], [REGION_COLORS[6], 'Motor neurons'],
+  [REGION_COLORS[4], 'Nerve cord'], [REGION_COLORS[6], 'Motor neurons'], [REGION_COLORS[10], 'Sensory neurons in eyes, body and wings'],
   [ROLE_COLORS.input, 'Cells that see the game'], [ROLE_COLORS.readout, 'Cells a flap is read from']
 ].map(([color, label]) => `<li><i style="background:${color}"></i>${label}</li>`).join('');
 
@@ -161,13 +161,13 @@ const TEMPLATE = `
 <main>
   <section class="hero">
     <div class="intro">
-      <h1>Every trade teaches the fly.</h1>
+      <h1>Every trade teaches the fly</h1>
       <p>A real fruit-fly brain plays Flappy Bird. It only gets to try when the token’s trading fees pay for an attempt, and every attempt nudges it toward flying a little further.</p>
     </div>
     <div class="stage">
       <figure class="specimen">
         <canvas id="specimen" aria-label="The fly's neurons, lit as they fire"></canvas>
-        <figcaption id="specimenNote">Each coloured dot is one real neuron, about one in eleven of the brain’s 166,700, drawn where its part of the nervous system sits. A region glows when it fires more than it usually does.</figcaption>
+        <figcaption id="specimenNote">Each coloured dot is one real neuron, about one in eleven of the brain’s 166,700, drawn where its part of the nervous system sits. A region glows when it fires more than it usually does, and the wings light up with every flap.</figcaption>
         <ul class="legend">${LEGEND}</ul>
       </figure>
       <figure class="arena">

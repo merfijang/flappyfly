@@ -4,10 +4,14 @@
 import { REGIONS, ROLE } from '../shared/display';
 import { bodyPoint, neuronPoint, project, rng, wingPoint, type Projection, type Vec } from './flyShape';
 
-export const REGION_COLORS = ['#5cc8ff', '#5cc8ff', '#a98bff', '#f7a08a', '#46d6a4', '#9be7c9', '#ff6f91'];
+// order follows REGIONS: optic ×2, brain, neck, vnc, abdominal, motor, retina ×2, head sense, body sense, wing ×2, gut
+export const REGION_COLORS = ['#5cc8ff', '#5cc8ff', '#a98bff', '#f7a08a', '#46d6a4', '#9be7c9', '#ff6f91', '#8fe9ff', '#8fe9ff', '#d0b8ff', '#c3d2ee', '#a8d8ff', '#a8d8ff', '#ffd29a'];
+/** Sensory neurons in the periphery: they twinkle with their own spikes, no region glow. */
+const PERIPHERAL = new Set<string>(['retinaL', 'retinaR', 'headSense', 'bodySense', 'wingL', 'wingR', 'gut']);
+const WING = new Set<string>(['wingL', 'wingR']);
 export const ROLE_COLORS = { input: '#d9f7ff', readout: '#ff8a3d' };
 
-const BODY_DOTS = 5200, WING_DOTS = 2400;
+const BODY_DOTS = 2600, WING_DOTS = 900;
 const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
 
 export class Specimen {
@@ -103,7 +107,7 @@ export class Specimen {
     for (let i = 0; i < REGIONS.length; i++) {
       this.glow[i] += (this.glowTarget[i] - this.glow[i]) * 0.12;
       const g = this.glow[i] + (REGIONS[i] === 'neck' ? this.readoutFlash * 0.6 : 0);
-      if (g < 0.02 || !this.regionSize[i]) continue;
+      if (g < 0.02 || !this.regionSize[i] || PERIPHERAL.has(REGIONS[i])) continue;
       project(this.centroid[i], yaw, pitch, p);
       const rad = S * (REGIONS[i] === 'vnc' ? 0.16 : REGIONS[i] === 'brain' ? 0.12 : 0.1), [r, gg, b] = hex(REGIONS[i] === 'neck' ? ROLE_COLORS.readout : REGION_COLORS[i]);
       const grad = c.createRadialGradient(X(), Y(), 0, X(), Y(), rad);
@@ -113,12 +117,16 @@ export class Specimen {
     c.globalCompositeOperation = 'source-over';
 
     for (let k = 0; k < this.count; k++) {
-      project([this.points[k * 3], this.points[k * 3 + 1], this.points[k * 3 + 2]], yaw, pitch, p);
-      const reg = this.region[k], role = this.role[k], near = Math.max(0, Math.min(1, p.depth + 0.5));
+      const reg = this.region[k], role = this.role[k], name = REGIONS[reg], wing = WING.has(name);
+      let x = this.points[k * 3], y = this.points[k * 3 + 1], z = this.points[k * 3 + 2];
+      if (wing) { y += lift * (0.2 - x) * 0.35; z *= 1 + lift * 0.4; } // wing sensors ride on the wing
+      project([x, y, z], yaw, pitch, p);
+      const near = Math.max(0, Math.min(1, p.depth + 0.5));
       let h = this.heat[k];
       if (role === ROLE.readout) h = Math.max(h, this.readoutFlash);
-      // background chatter twinkles faintly; firing in an excited region (or a role cell) shines
-      const shine = role ? h : h * (0.25 + 0.75 * this.glow[reg]);
+      if (wing) h = Math.max(h, lift * 0.9); // the wings light up with every flap
+      // central chatter twinkles faintly and shines where a region is excited; the periphery twinkles with its own spikes
+      const shine = role ? h : PERIPHERAL.has(name) ? h * 0.75 : h * (0.3 + 0.7 * this.glow[reg]);
       c.fillStyle = role === ROLE.input ? ROLE_COLORS.input : role === ROLE.readout ? ROLE_COLORS.readout : shine > 0.45 ? '#f4fbff' : REGION_COLORS[reg];
       c.globalAlpha = Math.min(1, (role ? 0.45 : 0.2) + near * 0.25 + shine * 0.75);
       const s = ((role ? 1.5 : 0.8) + near * 0.5 + shine * 1.3) * dpr;

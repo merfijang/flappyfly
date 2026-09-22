@@ -27,8 +27,13 @@ describe('display neurons', () => {
     expect(REGIONS[regionOf('cb_intrinsic', 1, 1)]).toBe('brain');
     expect(REGIONS[regionOf('ascending_neuron', 1, 1)]).toBe('neck');
     expect(REGIONS[regionOf('vnc_motor', 1, 1)]).toBe('motor');
-    expect(REGIONS[regionOf('ENS', 0, 1)]).toBe('abdominal');
+    expect(REGIONS[regionOf('ENS', 0, 1)]).toBe('gut');
     expect(REGIONS[regionOf('vnc_intrinsic', 1, 1)]).toBe('vnc');
+    expect(REGIONS[regionOf('ol_sensory', 2, 1)]).toBe('retinaR');
+    expect(REGIONS[regionOf('cb_sensory', 1, 1)]).toBe('headSense');
+    expect(REGIONS[regionOf('vnc_sensory', 1, 3)]).toBe('wingL');
+    expect(REGIONS[regionOf('vnc_sensory', 1, 4)]).toBe('bodySense');
+    expect(REGIONS[regionOf('sensory_ascending', 2, 4)]).toBe('bodySense');
   });
 
   it('always draws every game-input and readout neuron, with its role', () => {
