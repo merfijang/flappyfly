@@ -5,6 +5,12 @@
 	handle @api {
 		reverse_proxy 127.0.0.1:8787
 	}
+	# assets of the Vercel-hosted site (its index.html points here, see README)
+	handle_path /remote/* {
+		header Access-Control-Allow-Origin *
+		root * /opt/flappyfly/dist-remote
+		file_server
+	}
 	handle {
 		# the Vercel-hosted site loads the neuron map from here
 		header /brain/* Access-Control-Allow-Origin *

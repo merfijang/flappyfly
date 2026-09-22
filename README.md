@@ -59,7 +59,10 @@ One VPS runs both: Caddy serves `dist/` and HTTPS, and proxies `/ws`, `/stats`, 
 
 - `deploy/flappyfly.service` — systemd unit (user `flappyfly`, state in `/var/lib/flappyfly`, env in `/etc/flappyfly.env`, template `deploy/flappyfly.env.example`).
 - `deploy/Caddyfile` — site + proxy for flappyfly.site / www, plus plain-IP access.
-- DNS: `A @` and `A www` → the VPS IP.
+- flappyfly.site is served by Vercel (the MCP token cannot edit DNS): Vercel hosts only `index.html`; JS/CSS come from the VPS. Rebuild them on the VPS with
+  `VITE_SERVER_URL=wss://144-31-153-206.sslip.io/ws npx vite build --base=https://144-31-153-206.sslip.io/remote/ --outDir dist-remote`
+  and redeploy that `dist-remote/index.html` to the Vercel project `flappyfly`.
+- `144-31-153-206.sslip.io` gives the VPS a TLS hostname without DNS setup. With `A @`/`www` records pointing to the VPS instead, the plain `dist/` build on the VPS serves everything.
 - Load: ≈40% of one core, ≈200 MB RAM; each viewer ≈25 KB/s of WebSocket.
 
 ## Tests
