@@ -23,7 +23,7 @@ export class LearningChart {
     const X = (n: number) => pad.l + ((n - n0) / (n1 - n0 || 1)) * (W - pad.l - pad.r);
     const Y = (v: number) => H - pad.b - (v / maxFit) * (H - pad.t - pad.b);
 
-    c.font = '11px Geist, system-ui, sans-serif'; c.fillStyle = '#6b7890'; c.strokeStyle = '#1c2436'; c.lineWidth = 1;
+    c.font = '11px "IBM Plex Mono", ui-monospace, monospace'; c.fillStyle = '#6b7890'; c.strokeStyle = '#1c2436'; c.lineWidth = 1;
     for (let v = 0; v <= maxFit; v += Math.max(1, Math.ceil(maxFit / 4))) {
       c.beginPath(); c.moveTo(pad.l, Y(v) + 0.5); c.lineTo(W - pad.r, Y(v) + 0.5); c.stroke();
       c.textAlign = 'right'; c.fillText(String(v), pad.l - 6, Y(v) + 4);

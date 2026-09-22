@@ -1,8 +1,8 @@
-// Point-cloud fly. Each body part is a cloud of points; the specimen puts one real neuron
-// on each point of the nervous-system parts, and draws the wings as plain (non-neuron) dots.
-import { REGIONS } from '../shared/display';
+// Point-cloud fly: a faint body silhouette with the nervous system inside it.
+// Neuron points sit where that part of the CNS is in a real fly (schematic, not traced).
+import { REGIONS, ROLE } from '../shared/display';
 
-type Vec = [number, number, number];
+export type Vec = [number, number, number];
 
 /** Seeded RNG so the fly looks the same for every viewer. */
 export function rng(seed: number) {
@@ -12,31 +12,56 @@ export function rng(seed: number) {
 
 function gauss(r: () => number) { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); }
 
-function inEllipsoid(r: () => number, c: Vec, rad: Vec, shell: number): Vec {
+/** Random point in (shell > 0: near the surface of) an ellipsoid. */
+function inEllipsoid(r: () => number, c: Vec, rad: Vec, shell = 0): Vec {
   let x = gauss(r), y = gauss(r), z = gauss(r); const d = Math.hypot(x, y, z) || 1;
   const k = shell > 0 ? 1 - shell * r() : Math.cbrt(r());
   x = (x / d) * k; y = (y / d) * k; z = (z / d) * k;
   return [c[0] + x * rad[0], c[1] + y * rad[1], c[2] + z * rad[2]];
 }
 
-/** x: tail → head, y: down → up, z: right → left. Units ≈ body length. */
-export function regionPoint(region: number, r: () => number): Vec {
+// x: tail → head, y: down → up, z: right → left. Units ≈ body length.
+const OPTIC = (side: 1 | -1): Vec => [0.44, 0.045, side * 0.112];
+const BRAIN: Vec = [0.445, 0.05, 0];
+const NEUROMERES = [0.18, 0.09, 0.02];
+
+function legPath(leg: number, t: number, r: () => number): Vec {
+  const side = leg < 3 ? 1 : -1, seg = leg % 3, rootX = NEUROMERES[seg];
+  if (t < 0.25) { const u = t / 0.25; return [rootX, -0.05 - u * 0.06, side * (0.04 + u * 0.08)]; } // nerve out of the VNC
+  const u = (t - 0.25) / 0.75, knee = Math.min(1, u / 0.4), foot = Math.max(0, (u - 0.4) / 0.6);
+  return [rootX - knee * 0.06 - foot * 0.14 * (seg === 2 ? 1.6 : 1), -0.11 - knee * 0.18 - foot * 0.2, side * (0.12 + knee * 0.1 + foot * 0.06) + gauss(r) * 0.006];
+}
+
+/** Where a displayed neuron is drawn. */
+export function neuronPoint(region: number, role: number, r: () => number): Vec {
+  if (role === ROLE.input) {
+    // visual projection neurons: the band from the optic lobe to the central brain
+    const side = REGIONS[region] === 'opticR' ? -1 : 1, t = 0.3 + r() * 0.45, o = OPTIC(side);
+    return [o[0] + (BRAIN[0] - o[0]) * t + gauss(r) * 0.01, o[1] + (BRAIN[1] - o[1]) * t + gauss(r) * 0.018, o[2] + (BRAIN[2] - o[2]) * t + gauss(r) * 0.008];
+  }
+  if (role === ROLE.readout) { const t = r(); return [0.345 - t * 0.09, 0.005 - t * 0.02 + gauss(r) * 0.01, gauss(r) * 0.014]; }
   switch (REGIONS[region]) {
-    case 'eyeL': return inEllipsoid(r, [0.48, 0.06, 0.15], [0.1, 0.13, 0.09], 0.2);
-    case 'eyeR': return inEllipsoid(r, [0.48, 0.06, -0.15], [0.1, 0.13, 0.09], 0.2);
-    case 'head': return inEllipsoid(r, [0.43, 0.02, 0], [0.15, 0.16, 0.13], 0.5);
-    case 'neck': { const t = r(); return [0.27 - t * 0.07, 0.02 + gauss(r) * 0.025, gauss(r) * 0.03]; }
-    case 'thorax': return inEllipsoid(r, [0.1, 0.03, 0], [0.22, 0.2, 0.18], 0.45);
-    case 'abdomen': { const p = inEllipsoid(r, [-0.37, 0, 0], [0.36, 0.19, 0.18], 0.35); p[1] -= (p[0] + 0.37) ** 2 * 0.25; return p; }
-    default: { // legs: three per side, hanging down and back from the thorax
-      const leg = Math.floor(r() * 6), side = leg < 3 ? 1 : -1, root = 0.2 - (leg % 3) * 0.13, t = r();
-      const knee = t < 0.45 ? t / 0.45 : 1, foot = t < 0.45 ? 0 : (t - 0.45) / 0.55;
-      return [root - knee * 0.06 - foot * 0.14 * (leg % 3 === 2 ? 1.6 : 1), -0.1 - knee * 0.2 - foot * 0.2, side * (0.12 + knee * 0.12 + foot * 0.06) + gauss(r) * 0.008];
-    }
+    case 'opticL': return inEllipsoid(r, OPTIC(1), [0.055, 0.1, 0.042], 0.35);
+    case 'opticR': return inEllipsoid(r, OPTIC(-1), [0.055, 0.1, 0.042], 0.35);
+    case 'brain': return inEllipsoid(r, BRAIN, [0.07, 0.07, 0.07]);
+    case 'neck': { const t = r(); return [0.35 - t * 0.12, 0.005 - t * 0.035 + gauss(r) * 0.012, gauss(r) * 0.016]; }
+    case 'vnc': return inEllipsoid(r, [NEUROMERES[Math.floor(r() * 3)], -0.045, 0], [0.045, 0.032, 0.05]);
+    case 'abdominal': { const t = r(); return [-0.02 - t * 0.09, -0.045 + gauss(r) * 0.012, gauss(r) * (0.022 * (1 - t) + 0.006)]; }
+    default: return legPath(Math.floor(r() * 6), r(), r); // motor neurons, drawn along their leg nerves
   }
 }
 
-/** Wing membrane points; `side` 1 = left wing. Returned in the resting (folded back) pose. */
+/** Faint outline of the body the nervous system lives in (not neurons). */
+export function bodyPoint(r: () => number): Vec {
+  const pick = r();
+  if (pick < 0.16) return inEllipsoid(r, [0.43, 0.03, 0], [0.15, 0.15, 0.13], 0.08);
+  if (pick < 0.3) return inEllipsoid(r, [0.47, 0.06, r() < 0.5 ? 0.15 : -0.15], [0.1, 0.13, 0.09], 0.1);
+  if (pick < 0.55) return inEllipsoid(r, [0.1, 0.03, 0], [0.22, 0.2, 0.18], 0.06);
+  if (pick < 0.88) { const p = inEllipsoid(r, [-0.37, 0, 0], [0.36, 0.19, 0.18], 0.06); p[1] -= (p[0] + 0.37) ** 2 * 0.25; return p; }
+  return legPath(Math.floor(r() * 6), 0.25 + r() * 0.75, r);
+}
+
+/** Wing membrane points; `side` 1 = left wing. Resting pose, folded back over the body. */
 export function wingPoint(side: 1 | -1, r: () => number): Vec {
   const t = Math.sqrt(r()), w = 0.3 * Math.sin(Math.PI * Math.min(1, t * 0.98)), a = r() - 0.5;
   return [0.06 - t * 0.74, 0.21 + t * 0.05, side * (0.07 + t * 0.26 + a * w)];

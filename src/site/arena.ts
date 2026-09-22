@@ -1,6 +1,6 @@
 // The game as the server plays it: pipes and the fly drawn as dots, from streamed frames.
 import type { Frame } from '../shared/protocol';
-import { project, regionPoint, rng, wingPoint, type Projection } from './flyShape';
+import { bodyPoint, project, rng, wingPoint, type Projection } from './flyShape';
 
 const W = 480, H = 640, GROUND = 594, PIPE_W = 72, BIRD_X = 112;
 
@@ -17,7 +17,7 @@ export class Arena {
     const d = Math.min(devicePixelRatio || 1, 2);
     canvas.width = W * d; canvas.height = H * d; this.ctx.scale(d, d);
     const r = rng(3), body: number[] = [], wing: number[] = [];
-    for (let i = 0; i < 420; i++) body.push(...regionPoint([0, 1, 2, 3, 4, 5, 5, 4, 2][i % 9], r));
+    for (let i = 0; i < 420; i++) body.push(...bodyPoint(r));
     for (let i = 0; i < 160; i++) wing.push(...wingPoint(i % 2 ? 1 : -1, r));
     this.fly = Float32Array.from(body); this.wing = Float32Array.from(wing);
     requestAnimationFrame(this.draw);
@@ -39,7 +39,7 @@ export class Arena {
     this.drawFly(f ? f.y : 320, f ? f.vy : 0);
     if (f) {
       c.fillStyle = '#e6ecf5'; c.textAlign = 'center';
-      c.font = 'italic 500 56px Newsreader, Georgia, serif';
+      c.font = 'italic 400 64px "Instrument Serif", Georgia, serif';
       c.fillText(String(f.score), W / 2, 84);
     }
     this.wingFlash *= 0.8;

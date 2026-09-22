@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { pickDisplayNeurons, REGION_QUOTA, REGIONS, regionOf } from './display';
+import type { NeuronMeta } from '../core/connectome';
+import { pickDisplayNeurons, REGION_QUOTA, REGIONS, regionOf, ROLE } from './display';
 import { decodeBits, encodeBits } from './protocol';
 
 describe('activity bitset', () => {
@@ -12,17 +13,30 @@ describe('activity bitset', () => {
 });
 
 describe('display neurons', () => {
-  const classes = ['ol_intrinsic', 'cb_intrinsic', 'descending_neuron', 'vnc_intrinsic', 'vnc_motor', 'ENS'];
+  const classes = ['ol_intrinsic', 'cb_intrinsic', 'descending_neuron', 'vnc_intrinsic', 'vnc_motor', 'ENS', 'visual_projection'];
+  const types = ['other', 'LC4', 'LC10a', 'DNp01'];
   const n = 60000;
-  const meta = { n, superclasses: classes, classIdx: Uint8Array.from({ length: n }, (_, i) => i % classes.length), side: Uint8Array.from({ length: n }, (_, i) => 1 + (i % 2)) };
+  // every 1000th neuron is a visual input cell, every 1500th a readout DN
+  const typeIdx = Uint16Array.from({ length: n }, (_, i) => (i % 1000 === 7 ? (i % 2 ? 1 : 2) : i % 1500 === 11 ? 3 : 0));
+  const classIdx = Uint8Array.from({ length: n }, (_, i) => (typeIdx[i] === 1 || typeIdx[i] === 2 ? 6 : typeIdx[i] === 3 ? 2 : i % 6));
+  const meta: NeuronMeta = { n, types, superclasses: classes, params: { dt: 0.02, tau: 0.1, gain: 3, tonic: 0, noise_hz: 0, noise_amp: 0 }, typeIdx, classIdx, side: Uint8Array.from({ length: n }, (_, i) => 1 + (i % 2)) };
 
-  it('maps superclasses to body regions', () => {
-    expect(REGIONS[regionOf('ol_intrinsic', 1, 0)]).toBe('eyeL');
-    expect(REGIONS[regionOf('visual_projection', 2, 0)]).toBe('eyeR');
-    expect(REGIONS[regionOf('cb_intrinsic', 1, 0)]).toBe('head');
-    expect(REGIONS[regionOf('ascending_neuron', 1, 0)]).toBe('neck');
-    expect(REGIONS[regionOf('vnc_motor', 1, 0)]).toBe('legs');
-    expect(REGIONS[regionOf('ENS', 0, 0)]).toBe('abdomen');
+  it('maps superclasses to nervous-system regions', () => {
+    expect(REGIONS[regionOf('ol_intrinsic', 1, 1)]).toBe('opticL');
+    expect(REGIONS[regionOf('visual_projection', 2, 1)]).toBe('opticR');
+    expect(REGIONS[regionOf('cb_intrinsic', 1, 1)]).toBe('brain');
+    expect(REGIONS[regionOf('ascending_neuron', 1, 1)]).toBe('neck');
+    expect(REGIONS[regionOf('vnc_motor', 1, 1)]).toBe('motor');
+    expect(REGIONS[regionOf('ENS', 0, 1)]).toBe('abdominal');
+    expect(REGIONS[regionOf('vnc_intrinsic', 1, 1)]).toBe('vnc');
+  });
+
+  it('always draws every game-input and readout neuron, with its role', () => {
+    const d = pickDisplayNeurons(meta), shown = new Map(Array.from(d.ids, (id, k) => [id, d.role[k]]));
+    for (let i = 0; i < n; i++) {
+      if (typeIdx[i] === 1 || typeIdx[i] === 2) expect(shown.get(i)).toBe(ROLE.input);
+      if (typeIdx[i] === 3) expect(shown.get(i)).toBe(ROLE.readout);
+    }
   });
 
   it('samples deterministically, within quotas, without duplicates', () => {
@@ -30,6 +44,6 @@ describe('display neurons', () => {
     expect(a.ids).toEqual(b.ids);
     expect(new Set(a.ids).size).toBe(a.ids.length);
     REGIONS.forEach((_, r) => expect(a.region.filter((x) => x === r).length).toBeLessThanOrEqual(REGION_QUOTA[r]));
-    a.ids.forEach((id, k) => expect(regionOf(classes[meta.classIdx[id]], meta.side[id], id)).toBe(a.region[k]));
+    a.ids.forEach((id, k) => expect(regionOf(classes[classIdx[id]], meta.side[id], id)).toBe(a.region[k]));
   });
 });

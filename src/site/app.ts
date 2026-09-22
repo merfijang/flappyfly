@@ -4,7 +4,7 @@ import { decodeBits, type AttemptRecord, type ServerMessage, type Stats } from '
 import { Arena } from './arena';
 import { LearningChart } from './chart';
 import { brainMetaUrl, connect, serverUrl } from './net';
-import { Specimen } from './specimen';
+import { REGION_COLORS, ROLE_COLORS, Specimen } from './specimen';
 
 const TOKEN_CA = (import.meta.env.VITE_TOKEN_CA as string | undefined) || null;
 
@@ -18,7 +18,7 @@ async function loadDisplayRegions() {
   let buf = await res.arrayBuffer();
   const b = new Uint8Array(buf, 0, 2);
   if (b[0] === 0x1f && b[1] === 0x8b) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-  return pickDisplayNeurons(parseMeta(buf)).region;
+  return pickDisplayNeurons(parseMeta(buf));
 }
 
 export class SiteApp {
@@ -37,7 +37,7 @@ export class SiteApp {
     this.arena = new Arena(this.$<HTMLCanvasElement>('arena'));
     this.chart = new LearningChart(this.$<HTMLCanvasElement>('chart'));
     this.token();
-    void loadDisplayRegions().then((region) => { this.specimen.setNeurons(region); this.bits = new Uint8Array(region.length); })
+    void loadDisplayRegions().then(({ region, role }) => { this.specimen.setNeurons(region, role); this.bits = new Uint8Array(region.length); })
       .catch(() => { this.$('specimenNote').textContent = 'The neuron map could not be loaded. Reload the page to try again.'; });
     connect(serverUrl(), {
       message: (m) => this.onMessage(m),
@@ -88,9 +88,10 @@ export class SiteApp {
 
   private setStats(s: Stats) {
     this.stats = s;
-    const pct = Math.min(100, (s.pendingLamports / s.lamportsPerAttempt) * 100);
-    this.$('bar').style.width = `${pct}%`;
-    this.$('meterText').textContent = `${sol(s.pendingLamports)} of ${sol(s.lamportsPerAttempt)} SOL collected toward the next attempt`;
+    // fees paid in but not flown yet: the queued attempts plus the part-paid next one
+    const left = s.queue * s.lamportsPerAttempt + s.pendingLamports;
+    this.$('bar').style.width = `${Math.min(100, (left / s.lamportsPerAttempt) * 100)}%`;
+    this.$('meterText').textContent = `${sol(left)} SOL of fees left to fly, ${sol(s.lamportsPerAttempt)} SOL per attempt`;
     this.$('fAttempts').textContent = s.attempts.toLocaleString();
     this.$('fQueue').textContent = s.queue.toLocaleString();
     this.$('fGen').textContent = s.generation.toLocaleString();
@@ -145,6 +146,12 @@ export class SiteApp {
   }
 }
 
+const LEGEND = [
+  [REGION_COLORS[0], 'Optic lobes'], [REGION_COLORS[2], 'Central brain'], [REGION_COLORS[3], 'Neck connective'],
+  [REGION_COLORS[4], 'Nerve cord'], [REGION_COLORS[6], 'Motor neurons'],
+  [ROLE_COLORS.input, 'Cells that see the game'], [ROLE_COLORS.readout, 'Cells a flap is read from']
+].map(([color, label]) => `<li><i style="background:${color}"></i>${label}</li>`).join('');
+
 const TEMPLATE = `
 <header class="top">
   <a class="mark" href="/">FlappyFly</a>
@@ -160,7 +167,8 @@ const TEMPLATE = `
     <div class="stage">
       <figure class="specimen">
         <canvas id="specimen" aria-label="The fly's neurons, lit as they fire"></canvas>
-        <figcaption id="specimenNote">Each dot is one real neuron, about one in eleven of the brain’s 166,700, placed by region. It lights up when that neuron fires.</figcaption>
+        <figcaption id="specimenNote">Each coloured dot is one real neuron, about one in eleven of the brain’s 166,700, drawn where its part of the nervous system sits. A region glows when it fires more than it usually does.</figcaption>
+        <ul class="legend">${LEGEND}</ul>
       </figure>
       <figure class="arena">
         <div class="screen"><canvas id="arena" aria-label="The game the fly is playing"></canvas><div id="overlay" class="overlay" hidden></div></div>
