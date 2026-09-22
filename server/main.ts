@@ -35,6 +35,7 @@ if (cfg.feeSource === 'solana' && cfg.feeToken) {
   cfg.feeWallets = coin.vaults;
   log(`coin ${coin.mint}: creator ${coin.creator}, ${coin.migrated ? 'trading on PumpSwap' : 'still on the bonding curve'}`);
   log(`fee vaults: ${coin.vaults.join(', ')}`);
+  if (cfg.feeMode === 'balance') log('counting everything that lands in those vaults: if this creator made other coins, their fees count too (FEE_MINT counts one coin, at a request per trade)');
 }
 
 let fly: FlyServer | undefined;

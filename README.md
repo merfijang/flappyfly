@@ -40,8 +40,8 @@ First server start calibrates the readout (~30 s) and writes `data/state.json`. 
 | `FEE_WALLET` | — | Address that receives the fees (pump.fun creator vault). Required for `solana` |
 | `SOLANA_RPC_URL` | public mainnet | Use a paid RPC (e.g. Helius) in production |
 | `SOL_PER_ATTEMPT` | `0.05` | Price of one attempt |
-| `FEE_TOKEN` | — | A pump.fun coin address. The server finds its creator and both fee vaults itself, and counts only that coin |
-| `FEE_MINT` | — | Count only fees from trades of this mint (forces `FEE_MODE=transactions`). A creator vault collects fees from every coin that creator made, so use this to measure one coin |
+| `FEE_TOKEN` | — | A pump.fun coin address. The server finds its creator and both fee vaults itself and watches them |
+| `FEE_MINT` | — | Count only fees from trades of this mint (forces `FEE_MODE=transactions`, one RPC request per trade). A creator vault collects fees from every coin that creator made, so this matters only if the creator has several |
 | `FEE_MODE` | `balance` | `balance`: one `getBalance` per poll, any increase = fees (a claim resets the baseline). `transactions`: per-trade exact via `getTransaction`, needs a paid RPC when trading is busy |
 | `POLL_MS` | `5000` / `10000` | Poll interval (balance / transactions) |
 | `MOCK_FEE_EVERY_MS` | `4000` | Fake fee interval in mock mode |

@@ -13,14 +13,16 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   // FEE_TOKEN finds the wallets itself (see pumpToken.ts), so only one of the two is needed
   if (feeSource === 'solana' && !feeWallets.length && !env.FEE_TOKEN?.trim()) throw new Error('FEE_SOURCE=solana needs FEE_TOKEN (a pump.fun coin) or FEE_WALLET (the address that receives the fees)');
   // balance: 1 getBalance per poll (cheap, default). transactions: per-trade exact, needs a paid RPC under load.
-  const oneCoin = (env.FEE_MINT ?? env.FEE_TOKEN ?? '').trim();
+  // Default is balance polling: one request per wallet every few seconds, whatever the trading volume.
+  // FEE_MINT asks for per-trade counting instead, which is exact per coin but costs a request per trade.
+  const oneCoin = (env.FEE_MINT ?? '').trim();
   const feeMode = (env.FEE_MODE ?? (oneCoin ? 'transactions' : 'balance')) as Config['feeMode'];
   if (oneCoin && feeMode !== 'transactions') throw new Error('counting one coin needs FEE_MODE=transactions: a balance poll cannot tell which coin paid');
   if (feeMode !== 'balance' && feeMode !== 'transactions') throw new Error(`FEE_MODE must be balance or transactions, got ${feeMode}`);
   const sol = Number(env.SOL_PER_ATTEMPT ?? 0.05);
   if (!(sol > 0)) throw new Error('SOL_PER_ATTEMPT must be a positive number');
   return {
-    port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', feeMint: env.FEE_MINT?.trim() || env.FEE_TOKEN?.trim() || null, feeToken: env.FEE_TOKEN?.trim() || null,
+    port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', feeMint: env.FEE_MINT?.trim() || null, feeToken: env.FEE_TOKEN?.trim() || null,
     gameSpeed: Number(env.GAME_SPEED ?? 1),
     course: { gap: Number(env.COURSE_GAP ?? 210), spawnEvery: Number(env.COURSE_SPAWN ?? 2.1), speed: Number(env.COURSE_PIPE_SPEED ?? 132) },
     readoutSize: Number(env.READOUT_SIZE ?? 64), feeMode, feeSource, feeWallets, lamportsPerAttempt: Math.round(sol * 1e9),
