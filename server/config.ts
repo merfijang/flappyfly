@@ -18,7 +18,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (!(sol > 0)) throw new Error('SOL_PER_ATTEMPT must be a positive number');
   return {
     port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0',
-    gameSpeed: Number(env.GAME_SPEED ?? 0.5),
+    gameSpeed: Number(env.GAME_SPEED ?? 1),
     course: { gap: Number(env.COURSE_GAP ?? 210), spawnEvery: Number(env.COURSE_SPAWN ?? 2.1), speed: Number(env.COURSE_PIPE_SPEED ?? 132) },
     readoutSize: Number(env.READOUT_SIZE ?? 64), feeMode, feeSource, feeWallets, lamportsPerAttempt: Math.round(sol * 1e9),
     rpcUrl: env.SOLANA_RPC_URL ?? 'https://api.mainnet-beta.solana.com',

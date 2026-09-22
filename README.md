@@ -47,7 +47,7 @@ First server start calibrates the readout (~30 s) and writes `data/state.json`. 
 | `STATE_FILE` | `data/state.json` | Put this on a persistent volume |
 | `PORT` | `8787` | HTTP + WebSocket (`/ws`, `/health`, `/stats`) |
 | `HOST` | `0.0.0.0` | Bind address (`127.0.0.1` behind a reverse proxy) |
-| `GAME_SPEED` | `0.5` | Game pace relative to real time (the fly needs ~200 ms to react) |
+| `GAME_SPEED` | `1` | Game pace relative to real time (lower it to give the fly an easier ride) |
 | `COURSE_GAP` / `COURSE_SPAWN` / `COURSE_PIPE_SPEED` | `210` / `2.1` / `132` | Gap height, seconds between pipes, pipe speed |
 | `READOUT_SIZE` | `64` | How many neuron groups the flap is read from |
 
