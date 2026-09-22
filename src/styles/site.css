@@ -78,7 +78,21 @@ h2 { font-size: 36px; line-height: 1.1; }
 .feed li.gen { color: var(--neuron); }
 .feed:empty::before { content: "Fees and attempts will show up here as they happen."; color: var(--ink-2); }
 
-.how { padding: 44px 0 64px; }
+.how { padding: 44px 0 40px; }
+
+.run { padding: 8px 0 72px; }
+.lede { color: var(--ink-2); margin: 10px 0 0; max-width: 42rem; }
+.steps { list-style: none; counter-reset: step; margin: 26px 0 0; padding: 0; display: grid; gap: 26px; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 4px 12px; }
+.steps li::before { content: counter(step); font: 12px var(--mono); color: var(--neuron); padding-top: 9px; }
+.steps h3 { grid-column: 2; margin: 0; }
+.steps p { grid-column: 2; margin: 6px 0 0; color: var(--ink-2); max-width: 44rem; }
+.steps pre { grid-column: 2; margin: 12px 0 0; padding: 14px 16px; background: var(--panel); border: 1px solid var(--rule); border-left: 2px solid var(--neuron); overflow-x: auto; }
+.steps code { font: 13px/1.7 var(--mono); color: var(--ink); }
+.steps .c { color: var(--ink-2); }
+.source { margin: 30px 0 0; font: 14px var(--mono); }
+.nav { margin-left: auto; color: var(--ink-2); font: 13px var(--mono); text-decoration: none; border-bottom: 1px solid var(--rule); }
+.nav:hover { color: var(--ink); border-color: var(--ink-2); }
 .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin-top: 22px; }
 h3 { font-size: 26px; margin-bottom: 8px; }
 .cols p { margin: 0; color: var(--ink-2); max-width: 34rem; }

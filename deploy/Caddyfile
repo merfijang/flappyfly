@@ -20,7 +20,7 @@
 	}
 }
 
-# TLS hostname without any DNS setup: sslip.io resolves 144-31-153-206.sslip.io to the IP
+# TLS hostname without any DNS setup: sslip.io resolves <ip-with-dashes>.sslip.io to that IP
 {$VPS_HOST} {
 	import flappyfly
 }

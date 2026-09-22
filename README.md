@@ -63,10 +63,9 @@ One VPS runs both: Caddy serves `dist/` and HTTPS, and proxies `/ws`, `/stats`, 
 
 - `deploy/flappyfly.service` — systemd unit (user `flappyfly`, state in `/var/lib/flappyfly`, env in `/etc/flappyfly.env`, template `deploy/flappyfly.env.example`).
 - `deploy/Caddyfile` — site + proxy for flappyfly.site / www, plus plain-IP access.
-- flappyfly.site is served by Vercel (the MCP token cannot edit DNS): Vercel hosts only `index.html`; JS/CSS come from the VPS. Rebuild them on the VPS with
-  `VITE_SERVER_URL=wss://144-31-153-206.sslip.io/ws npx vite build --base=https://144-31-153-206.sslip.io/remote/ --outDir dist-remote --emptyOutDir false` (keeps the previous assets so the live page never 404s mid-deploy)
-  and redeploy that `dist-remote/index.html` to the Vercel project `flappyfly`.
-- `144-31-153-206.sslip.io` gives the VPS a TLS hostname without DNS setup. With `A @`/`www` records pointing to the VPS instead, the plain `dist/` build on the VPS serves everything.
+- Simplest: point `A @` and `A www` at the VPS. Caddy then serves the site and proxies the fly server at the same host, and `dist/` is all you need.
+- Without touching DNS: any host can borrow a TLS name from sslip.io (`<ip-with-dashes>.sslip.io`, e.g. `203-0-113-7.sslip.io`). Host `index.html` anywhere (we use Vercel) and build the assets it loads on the VPS:
+  `VITE_SERVER_URL=wss://$VPS_HOST/ws npx vite build --base=https://$VPS_HOST/remote/ --outDir dist-remote --emptyOutDir false` (`--emptyOutDir false` keeps the previous assets so the live page never 404s mid-deploy).
 - Load: ≈40% of one core, ≈200 MB RAM; each viewer ≈25 KB/s of WebSocket.
 
 ## Tests

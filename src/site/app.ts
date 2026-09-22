@@ -6,6 +6,7 @@ import { LearningChart } from './chart';
 import { brainMetaUrl, connect, serverUrl } from './net';
 import { REGION_COLORS, ROLE_COLORS, Specimen } from './specimen';
 
+const REPO = (import.meta.env.VITE_REPO_URL as string | undefined) || 'https://github.com/merfijang/flappyfly';
 const TOKEN_CA = (import.meta.env.VITE_TOKEN_CA as string | undefined) || null;
 const TOKEN_TICKER = (import.meta.env.VITE_TOKEN_TICKER as string | undefined) || null;
 
@@ -172,6 +173,7 @@ const TEMPLATE = `
 <header class="top">
   <a class="mark" href="/">FlappyFly</a>
   <p class="live"><span id="pip" class="pip"></span><span id="liveText">Connecting to the fly</span></p>
+  <a class="nav" href="#run">Run your own</a>
 </header>
 <main>
   <section class="hero">
@@ -242,5 +244,35 @@ const TEMPLATE = `
       </div>
     </div>
     <p class="honest">This is an experiment, not a claim that a fly understands Flappy Bird. The way the game reaches the eyes and the way a flap is read out are designed interfaces. When it flies badly, you are watching it fly badly.</p>
+  </section>
+
+  <section class="run" id="run">
+    <h2>Run your own fly</h2>
+    <p class="lede">All of it is open source: the connectome simulation, the game, the fee watcher and this page. A laptop is enough to watch a fly learn; a one-core box is enough to run one in public.</p>
+    <ol class="steps">
+      <li>
+        <h3>Get it flying</h3>
+        <p>Needs Node 20 or newer. On the first start the server loads the 57 MB connectome and measures which neurons to read the flap from, which takes about a minute. Then it flies on simulated fees.</p>
+        <pre><code>git clone ${REPO}.git
+cd flappyfly
+npm install
+npm run server   <span class="c"># the fly, on :8787</span>
+npm run dev      <span class="c"># the site, on :5173</span></code></pre>
+      </li>
+      <li>
+        <h3>Let a token pay for the attempts</h3>
+        <p>Fees are read straight from Solana. Point the server at the vaults your token&rsquo;s fees land in &mdash; for a pump.fun coin, both of them come from the creator wallet.</p>
+        <pre><code>node scripts/pump-vaults.mjs &lt;creator wallet&gt;
+
+FEE_SOURCE=solana \\
+FEE_WALLET=&lt;bonding curve vault&gt;,&lt;PumpSwap vault&gt; \\
+SOL_PER_ATTEMPT=0.001 npm run server</code></pre>
+      </li>
+      <li>
+        <h3>Put it in public</h3>
+        <p>One always-on box with a single core runs the brain at 50 steps a second and streams it to everyone watching; each viewer costs about 25 KB/s. The <code>deploy/</code> folder has the systemd unit and the Caddy config that serve the site and the live stream from one domain.</p>
+      </li>
+    </ol>
+    <p class="source"><a href="${REPO}" target="_blank" rel="noopener">Source on GitHub</a></p>
   </section>
 </main>`;
