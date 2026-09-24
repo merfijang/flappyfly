@@ -29,17 +29,27 @@ if (!state.trainer || !state.readout) {
 log(`state: ${state.attempts} attempts, generation ${state.trainer.generation}, queue ${state.queue}`);
 
 const rpc = httpRpc(cfg.rpcUrl);
-// resolve the coin before the server is built, so its fee vaults are part of what the site shows
-if (cfg.feeSource === 'solana' && cfg.feeToken) {
-  const coin = await resolvePumpCoin(rpc, cfg.feeToken);
-  cfg.feeWallets = coin.vaults;
-  log(`coin ${coin.mint}: creator ${coin.creator}, ${coin.migrated ? 'trading on PumpSwap' : 'still on the bonding curve'}`);
-  log(`fee vaults: ${coin.vaults.join(', ')}`);
-  if (cfg.feeMode === 'balance') log('counting everything that lands in those vaults: if this creator made other coins, their fees count too (FEE_MINT counts one coin, at a request per trade)');
+
+/** The coin can be named before it exists: keep asking pump.fun until the launch lands. */
+async function waitForCoin(mint: string) {
+  for (let tries = 0; ; tries++) {
+    try { return await resolvePumpCoin(rpc, mint); }
+    catch (e) {
+      if (!tries) log(`${mint} is not on pump.fun yet — waiting for the launch (${e instanceof Error ? e.message.split(' — ')[0] : e})`);
+      await new Promise((r) => setTimeout(r, 15_000));
+    }
+  }
 }
 
+// resolve before the server starts when the coin is already live, so its vaults are in the first stats
+let coin = cfg.feeSource === 'solana' && cfg.feeToken ? await resolvePumpCoin(rpc, cfg.feeToken).catch(() => null) : null;
+if (coin) cfg.feeWallets = coin.vaults;
+
 let fly: FlyServer | undefined;
-const out = new Broadcaster({ hello: () => fly!.hello(), stats: () => fly!.stats() }, cfg.corsOrigin);
+const out = new Broadcaster(
+  { hello: () => fly!.hello(), stats: () => fly!.stats(), grant: (n) => fly!.grantAttempts(n) },
+  cfg.corsOrigin, cfg.adminToken
+);
 state.watchers ??= {}; state.balances ??= {};
 fly = new FlyServer({
   brain, groups, state, lamportsPerAttempt: cfg.lamportsPerAttempt, feeSource: cfg.feeSource, feeWallets: cfg.feeWallets,
@@ -53,6 +63,7 @@ if (cfg.feeSource === 'mock') {
 } else {
   const stops: (() => void)[] = [];
   stopFees = () => stops.forEach((stop) => stop());
+  const watchAll = () => {
   // one coin: walk that coin trades once and credit every vault it paid. Otherwise: one watcher per vault.
   const groups: string[][] = cfg.feeMint ? [cfg.feeWallets] : cfg.feeWallets.map((w) => [w]);
   for (const wallets of groups) {
@@ -68,7 +79,27 @@ if (cfg.feeSource === 'mock') {
       .catch((e) => log(`first fee poll of ${wallet} failed, retrying in the loop:`, e instanceof Error ? e.message : e))
       .finally(() => { stops.push(watcher.start(cfg.pollMs, (m) => log(m))); });
   }
-  log(`fees: watching ${cfg.feeWallets.join(', ')} (${cfg.feeMode}, every ${cfg.pollMs} ms${cfg.feeMint ? `, only trades of ${cfg.feeMint}` : ''}) via ${cfg.rpcUrl}`);
+    log(`fees: watching ${cfg.feeWallets.join(', ')} (${cfg.feeMode}, every ${cfg.pollMs} ms${cfg.feeMint ? `, only trades of ${cfg.feeMint}` : ''}) via ${cfg.rpcUrl}`);
+  };
+
+  const announce = (c: NonNullable<typeof coin>) => {
+    log(`coin ${c.mint}: creator ${c.creator}, ${c.migrated ? 'trading on PumpSwap' : 'still on the bonding curve'}`);
+    log(`fee vaults: ${c.vaults.join(', ')}`);
+    if (cfg.feeMode === 'balance') log('counting everything that lands in those vaults: if this creator made other coins, their fees count too (FEE_MINT counts one coin, at a request per trade)');
+  };
+
+  if (cfg.feeToken && !coin) {
+    // the coin is not live yet: fly on granted attempts meanwhile, start counting the moment it launches
+    void waitForCoin(cfg.feeToken).then((found) => {
+      coin = found; cfg.feeWallets = found.vaults;
+      fly!.setFeeWallets(found.vaults);
+      announce(found);
+      watchAll();
+    });
+  } else {
+    if (coin) announce(coin);
+    watchAll();
+  }
 }
 log(`1 attempt = ${cfg.lamportsPerAttempt / 1e9} SOL`);
 

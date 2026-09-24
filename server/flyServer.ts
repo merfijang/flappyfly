@@ -85,6 +85,18 @@ export class FlyServer {
     return { ...this.state, queue: this.state.queue + (this.phase === 'flying' ? 1 : 0), pendingLamports: this.fees.pending };
   }
 
+  /** The coin may not exist yet when the server starts; its vaults arrive later. */
+  setFeeWallets(wallets: string[]) { this.o.feeWallets = wallets; this.o.out.json({ type: 'stats', stats: this.stats() }); }
+
+  /** Attempts given outside the fee flow (a launch push). They queue like any other. */
+  grantAttempts(n: number) {
+    if (!Number.isInteger(n) || n <= 0 || n > 10000) throw new Error(`grant 1 to 10000 attempts, got ${n}`);
+    this.state.queue += n;
+    this.o.save(this.snapshot());
+    this.o.out.json({ type: 'stats', stats: this.stats() });
+    return this.state.queue;
+  }
+
   /** Remember where a fee watcher is, so a restart neither recounts nor skips fees. */
   setWatcher(wallet: string, at: WatchPosition) {
     if (at.cursor) this.state.watchers[wallet] = at.cursor;

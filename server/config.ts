@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 export interface Config {
-  port: number; host: string; feeMint: string | null; feeToken: string | null; gameSpeed: number; course: { gap: number; spawnEvery: number; speed: number }; readoutSize: number; feeMode: 'balance' | 'transactions'; feeSource: 'mock' | 'solana'; rpcUrl: string; feeWallets: string[]; lamportsPerAttempt: number;
+  port: number; host: string; adminToken: string | null; feeMint: string | null; feeToken: string | null; gameSpeed: number; course: { gap: number; spawnEvery: number; speed: number }; readoutSize: number; feeMode: 'balance' | 'transactions'; feeSource: 'mock' | 'solana'; rpcUrl: string; feeWallets: string[]; lamportsPerAttempt: number;
   mockFeeEveryMs: number; mockTotalLamports: number; pollMs: number; stateFile: string; brainDir: string; corsOrigin: string;
 }
 
@@ -22,7 +22,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const sol = Number(env.SOL_PER_ATTEMPT ?? 0.05);
   if (!(sol > 0)) throw new Error('SOL_PER_ATTEMPT must be a positive number');
   return {
-    port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', feeMint: env.FEE_MINT?.trim() || null, feeToken: env.FEE_TOKEN?.trim() || null,
+    port: Number(env.PORT ?? 8787), host: env.HOST ?? '0.0.0.0', adminToken: env.ADMIN_TOKEN?.trim() || null, feeMint: env.FEE_MINT?.trim() || null, feeToken: env.FEE_TOKEN?.trim() || null,
     gameSpeed: Number(env.GAME_SPEED ?? 1),
     course: { gap: Number(env.COURSE_GAP ?? 210), spawnEvery: Number(env.COURSE_SPAWN ?? 2.1), speed: Number(env.COURSE_PIPE_SPEED ?? 132) },
     readoutSize: Number(env.READOUT_SIZE ?? 64), feeMode, feeSource, feeWallets, lamportsPerAttempt: Math.round(sol * 1e9),

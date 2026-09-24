@@ -57,6 +57,17 @@ describe('FlyServer', () => {
     expect(saves.at(-1)!.balances).toEqual({ VaultA: 12345 });
   });
 
+  it('can be handed attempts outside the fee flow, and refuses silly numbers', () => {
+    const { fly, saves, of } = setup();
+    expect(fly.grantAttempts(20)).toBe(20);
+    expect(fly.stats().queue).toBe(20);
+    expect(saves.at(-1)!.queue).toBe(20);
+    expect(of('stats').at(-1)!.stats.queue).toBe(20);
+    expect(() => fly.grantAttempts(0)).toThrow();
+    expect(() => fly.grantAttempts(2.5)).toThrow();
+    expect(() => fly.grantAttempts(50_000)).toThrow();
+  });
+
   it('counts an attempt in flight as still queued when saving', () => {
     const { fly } = setup();
     fly.addFee(fee(200));
