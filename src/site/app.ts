@@ -9,6 +9,7 @@ import { REGION_COLORS, ROLE_COLORS, Specimen } from './specimen';
 const REPO = (import.meta.env.VITE_REPO_URL as string | undefined) || 'https://github.com/merfijang/flappyfly';
 const TOKEN_CA = (import.meta.env.VITE_TOKEN_CA as string | undefined) || null;
 const TOKEN_TICKER = (import.meta.env.VITE_TOKEN_TICKER as string | undefined) || null;
+const X_URL = (import.meta.env.VITE_X_URL as string | undefined) || null;
 
 const sol = (lamports: number, digits = 4) => (lamports / 1e9).toFixed(digits).replace(/\.?0+$/, '') || '0';
 const sentence = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -41,6 +42,7 @@ export class SiteApp {
     this.arena = new Arena(this.$<HTMLCanvasElement>('arena'));
     this.chart = new LearningChart(this.$<HTMLCanvasElement>('chart'));
     this.token();
+    if (X_URL) { const x = this.$<HTMLAnchorElement>('xLink'); x.href = X_URL; x.hidden = false; }
     void loadMeta().then((meta) => { this.meta = meta; this.buildNeurons(); })
       .catch(() => { this.$('specimenNote').textContent = 'The neuron map could not be loaded. Reload the page to try again.'; });
     connect(serverUrl(), {
@@ -174,6 +176,7 @@ const TEMPLATE = `
   <a class="mark" href="/">FlappyFly</a>
   <p class="live"><span id="pip" class="pip"></span><span id="liveText">Connecting to the fly</span></p>
   <a class="nav" href="#run">Run your own</a>
+  <a class="nav x" id="xLink" hidden target="_blank" rel="noopener">X</a>
 </header>
 <main>
   <section class="hero">

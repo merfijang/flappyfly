@@ -91,6 +91,7 @@ h2 { font-size: 36px; line-height: 1.1; }
 .steps code { font: 13px/1.7 var(--mono); color: var(--ink); }
 .steps .c { color: var(--ink-2); }
 .source { margin: 30px 0 0; font: 14px var(--mono); }
+.nav + .nav { margin-left: 18px; }
 .nav { margin-left: auto; color: var(--ink-2); font: 13px var(--mono); text-decoration: none; border-bottom: 1px solid var(--rule); }
 .nav:hover { color: var(--ink); border-color: var(--ink-2); }
 .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin-top: 22px; }
